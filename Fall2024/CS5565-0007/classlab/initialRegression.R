@@ -3,103 +3,83 @@ library(MASS)
 library(ggplot2)
 library(reshape2)
 library(e1071)
+library(utils)
+library(ggplot2)
 
-#data <- data_clean
-data <- synthetic_data_25
-data <- data[,!names(data) =='X']
+data <- read.csv('./Workspace/UMKC/Fall2024/CS5565-0007/classlab/synthetic_data_25.csv')
+plot(data)
 
-data$diagnosis_binary <- ifelse(data$diagnosis=='M',1,0)
-data_cor <- data[,!names(data) %in% c('diagnosis','X')]
+#Create a numeric column based on M or B as 0/1
+data$diagnosis_binary <- ifelse(data$diagnosis=='B',1,0)
+data_cor <- data[,!names(data) %in% c('diagnosis')]
+print(summary(data_cor))
 
-mlog_model <- glm(
-  data$diagnosis_binary ~ data$perimeter_mean + data$compactness_mean + data$concavity_worst + data$texture_se + data$texture_worst + data$area_worst + data$symmetry_worst,
-  data = data,
-  family=binomial)
+cors <- cor(data_cor)
+print(cors[,31])
 
-summary(mlog_model)
-
-mbayes_model = naiveBayes(
-  data$diagnosis_binary ~ data$perimeter_mean + data$compactness_mean + data$concavity_worst + data$texture_se + data$texture_worst + data$area_worst + data$symmetry_worst,
-  data = data
-)
-mbayes_model
-
-
-
-#cors <- cor(data_cor)
-#print(cors[,31])
-
-#melted_cors <- melt(cors)
-
-#ggplot(data=melted_cors, aes(x=Var1, y=Var2,fill=value)) + geom_tile()
-
-
-#head(data)
-
-doLogistic <- function(Y,X,data,xlabel){
+doLogistic <- function(Y,X,data,ylabel,xlabel){
   log_model <- glm(Y ~ X, data=data, family=binomial)
-
+  
   Predicted_data <- data.frame(X = seq(min(X), max(X), len=nrow(data)))
-
+  
   # Fill predicted values using regression model
   Predicted_data$var1 = predict(log_model, Predicted_data, type="response")
-
-# Plot Predicted data and original data points
-  plot(y=Y, x=X, xlab=xlabel)
-  lines(Predicted_data$var1 ~ Predicted_data$X, Predicted_data, lwd=1, col="green")
   
-  log_model.Predicted_data <- Predicted_data
+  # Plot Predicted data and original data points
+  plot(y=Y, x=X, xlab=xlabel, ylab=ylabel)
+  lines(Predicted_data$var1 ~ Predicted_data$X, Predicted_data, lwd=1, col="green")
   
   return(log_model)
 }
 
-doLDA <- function(Y,X,data){
-  lda_model <- lda(Y ~ X,data=data)
-  
-  print("Predicting")
-  # Fill predicted values using regression model
-  predictions = predict(lda_model, data , type="response")
+doLogistic(data$diagnosis_binary, data$perimeter_mean, data, 'Diagnosis (B==1)', 'Perimeter mean' )
+doLogistic(data$diagnosis_binary, data$compactness_mean, data, 'Diagnosis (B==1)', 'Compactnessmean' )
+doLogistic(data$diagnosis_binary, data$concavity_worst, data, 'Diagnosis (B==1)', 'Concavity worst' )
+doLogistic(data$diagnosis_binary, data$texture_se, data, 'Diagnosis (B==1)', 'Texture se' )
+doLogistic(data$diagnosis_binary, data$texture_worst, data, 'Diagnosis (B==1)', 'Texture worst' )
+doLogistic(data$diagnosis_binary, data$area_worst, data, 'Diagnosis (B==1)', 'Area worst' )
+doLogistic(data$diagnosis_binary, data$symmetry_worst, data, 'Diagnosis (B==1)', 'Symmetry worst' )
 
-  #print(predictions)
-    
-  #print("Plotting")
-  # Plot Predicted data and original data points
-  #plot(y=Y, x=X)
-  #lines(predictions ~ X, data, lwd=1, col="blue")
-  
-  return(lda_model)
-}
+#split data into train and test
+#From https://www.statology.org/train-test-split-r/
+set.seed(5)
+sample <- sample(c(TRUE,FALSE), nrow(data), replace=TRUE, prob=c(0.8, 0.2))
+data_train <- data[sample,]
+data_test  <- data[!sample,]
 
-#perimeter_mean
-#compactness_mean
-#concavity_worst
-#texture_se
-#texture_worst
-#area_worst
-#symmetry_worst
+print(nrow(data_train))
+print(nrow(data_test))
 
-#mlogRes =
-#doLogistic(data$diagnosis_binary, 
-#           data$perimeter_mean + data$compactness_mean + data$concavity_worst + data$texture_se + data$texture_worst + data$area_worst + data$symmetry_worst,
-#           data,
-#           'multi')
+mlog_model <- glm(
+  diagnosis_binary ~ perimeter_mean + compactness_mean + concavity_worst + texture_se + texture_worst + area_worst + symmetry_worst,
+  data = data_train,
+  family=binomial)
 
+summary(mlog_model)
 
+data_test$probs <- predict(mlog_model, newdata = data_test, type="response")
+data_test$pred <- rep('B',nrow(data_test))
+data_test$pred[data_test$probs < 0.5] = 'M'
+test_actual = data_test$diagnosis
+test_prediction = data_test$pred
 
+table(test_actual, test_prediction)
 
-#print(mlogRes)
-#for( i in 4:ncol(data)){
-#for( i in 3:ncol(data)){
-#  print('#################')
-#  print(colnames(data)[i])
-#  #print("***** Logistic")
-#  #print(doLogistic(data$diagnosis_binary,data[,i],data,colnames(data)[i]))
-#  #doLogistic(data$diagnosis_binary,data[,i],data,colnames(data)[i])
-#  print("***** LDA")
-#  lda_res = doLDA(data$diagnosis_binary,data[,i],data)
-#  plot(lda_res)
-#}
+lda_model = lda(
+  diagnosis ~ perimeter_mean + compactness_mean + concavity_worst + texture_se + texture_worst + area_worst + symmetry_worst,
+  data = data_train
+)
+plot(lda_model)
 
+lda_pred <- predict(lda_model, newdata = data_test)
+names(lda_pred)
+lda_class <- lda_pred$class
+table(test_actual,lda_class)
 
-
-                           
+bayes_model <- naiveBayes(
+  diagnosis ~ perimeter_mean + compactness_mean + concavity_worst + texture_se + texture_worst + area_worst + symmetry_worst,
+  data = data_train
+)
+print(bayes_model)
+bayes_class <- predict(bayes_model, data_test)
+table(test_actual,bayes_class)
