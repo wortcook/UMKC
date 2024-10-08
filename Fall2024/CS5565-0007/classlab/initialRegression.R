@@ -66,9 +66,10 @@ test_prediction = data_test$pred
 table(test_actual, test_prediction)
 
 lda_model = lda(
-  diagnosis ~ perimeter_mean + compactness_mean + concavity_worst + texture_se + texture_worst + area_worst + symmetry_worst,
+  diagnosis ~ fractal_dimension_se+perimeter_mean + compactness_mean + concavity_worst + texture_se + texture_worst + area_worst + symmetry_worst,
   data = data_train
 )
+
 plot(lda_model)
 
 lda_pred <- predict(lda_model, newdata = data_test)
@@ -80,6 +81,7 @@ bayes_model <- naiveBayes(
   diagnosis ~ perimeter_mean + compactness_mean + concavity_worst + texture_se + texture_worst + area_worst + symmetry_worst,
   data = data_train
 )
+
 print(bayes_model)
 bayes_class <- predict(bayes_model, data_test)
 table(test_actual,bayes_class)
