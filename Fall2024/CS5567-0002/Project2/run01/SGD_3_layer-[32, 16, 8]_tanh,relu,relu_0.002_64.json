@@ -1,0 +1,1 @@
+{"accuracy": 65.41, "model_topology": "[32, 16, 8]", "activation_functions": "tanh,relu,relu", "learning_rate": 0.002,"batch_size": 64}
