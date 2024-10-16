@@ -1,0 +1,96 @@
+85.41|[784, 32, 16, 10]|[sigmoid, tanh]|adam|0.002|0|0.0
+85.19|[784, 32, 16, 10]|[sigmoid, tanh]|adam|0.002|0|0.001
+51.23|[784, 32, 16, 10]|[sigmoid, tanh]|sgd|0.001|0.1|0.0
+51.53|[784, 32, 16, 10]|[sigmoid, tanh]|sgd|0.001|0.1|0.001
+82.85|[784, 32, 16, 10]|[sigmoid, tanh]|asgd|0.02|0|0.0
+82.8|[784, 32, 16, 10]|[sigmoid, tanh]|asgd|0.02|0|0.001
+86.23|[784, 32, 16, 10]|[sigmoid, relu]|adam|0.002|0|0.0
+85.11|[784, 32, 16, 10]|[sigmoid, relu]|adam|0.002|0|0.001
+52.38|[784, 32, 16, 10]|[sigmoid, relu]|sgd|0.001|0.1|0.0
+39.68|[784, 32, 16, 10]|[sigmoid, relu]|sgd|0.001|0.1|0.001
+82.72|[784, 32, 16, 10]|[sigmoid, relu]|asgd|0.02|0|0.0
+82.33|[784, 32, 16, 10]|[sigmoid, relu]|asgd|0.02|0|0.001
+85.2|[784, 28, 28, 10]|[sigmoid, tanh]|adam|0.002|0|0.0
+84.86|[784, 28, 28, 10]|[sigmoid, tanh]|adam|0.002|0|0.001
+51.62|[784, 28, 28, 10]|[sigmoid, tanh]|sgd|0.001|0.1|0.0
+48.96|[784, 28, 28, 10]|[sigmoid, tanh]|sgd|0.001|0.1|0.001
+82.72|[784, 28, 28, 10]|[sigmoid, tanh]|asgd|0.02|0|0.0
+82.77|[784, 28, 28, 10]|[sigmoid, tanh]|asgd|0.02|0|0.001
+85.87|[784, 28, 28, 10]|[sigmoid, relu]|adam|0.002|0|0.0
+85.2|[784, 28, 28, 10]|[sigmoid, relu]|adam|0.002|0|0.001
+50.73|[784, 28, 28, 10]|[sigmoid, relu]|sgd|0.001|0.1|0.0
+41.48|[784, 28, 28, 10]|[sigmoid, relu]|sgd|0.001|0.1|0.001
+82.86|[784, 28, 28, 10]|[sigmoid, relu]|asgd|0.02|0|0.0
+81.66|[784, 28, 28, 10]|[sigmoid, relu]|asgd|0.02|0|0.001
+86.17|[784, 64, 32, 10]|[sigmoid, tanh]|adam|0.002|0|0.0
+84.95|[784, 64, 32, 10]|[sigmoid, tanh]|adam|0.002|0|0.001
+52.51|[784, 64, 32, 10]|[sigmoid, tanh]|sgd|0.001|0.1|0.0
+60.62|[784, 64, 32, 10]|[sigmoid, tanh]|sgd|0.001|0.1|0.001
+83.02|[784, 64, 32, 10]|[sigmoid, tanh]|asgd|0.02|0|0.0
+82.99|[784, 64, 32, 10]|[sigmoid, tanh]|asgd|0.02|0|0.001
+87.07|[784, 64, 32, 10]|[sigmoid, relu]|adam|0.002|0|0.0
+85.71|[784, 64, 32, 10]|[sigmoid, relu]|adam|0.002|0|0.001
+52.58|[784, 64, 32, 10]|[sigmoid, relu]|sgd|0.001|0.1|0.0
+45.31|[784, 64, 32, 10]|[sigmoid, relu]|sgd|0.001|0.1|0.001
+82.91|[784, 64, 32, 10]|[sigmoid, relu]|asgd|0.02|0|0.0
+82.27|[784, 64, 32, 10]|[sigmoid, relu]|asgd|0.02|0|0.001
+86.19|[784, 64, 32, 16, 10]|[sigmoid, sigmoid, tanh]|adam|0.002|0|0.0
+84.76|[784, 64, 32, 16, 10]|[sigmoid, sigmoid, tanh]|adam|0.002|0|0.001
+23.48|[784, 64, 32, 16, 10]|[sigmoid, sigmoid, tanh]|sgd|0.001|0.1|0.0
+26.78|[784, 64, 32, 16, 10]|[sigmoid, sigmoid, tanh]|sgd|0.001|0.1|0.001
+71.57|[784, 64, 32, 16, 10]|[sigmoid, sigmoid, tanh]|asgd|0.02|0|0.0
+73.93|[784, 64, 32, 16, 10]|[sigmoid, sigmoid, tanh]|asgd|0.02|0|0.001
+86.73|[784, 64, 32, 16, 10]|[relu, sigmoid, tanh]|adam|0.002|0|0.0
+85.65|[784, 64, 32, 16, 10]|[relu, sigmoid, tanh]|adam|0.002|0|0.001
+30.98|[784, 64, 32, 16, 10]|[relu, sigmoid, tanh]|sgd|0.001|0.1|0.0
+40.34|[784, 64, 32, 16, 10]|[relu, sigmoid, tanh]|sgd|0.001|0.1|0.001
+81.24|[784, 64, 32, 16, 10]|[relu, sigmoid, tanh]|asgd|0.02|0|0.0
+81.24|[784, 64, 32, 16, 10]|[relu, sigmoid, tanh]|asgd|0.02|0|0.001
+85.79|[784, 28, 28, 28, 10]|[sigmoid, sigmoid, tanh]|adam|0.002|0|0.0
+84.0|[784, 28, 28, 28, 10]|[sigmoid, sigmoid, tanh]|adam|0.002|0|0.001
+26.96|[784, 28, 28, 28, 10]|[sigmoid, sigmoid, tanh]|sgd|0.001|0.1|0.0
+27.5|[784, 28, 28, 28, 10]|[sigmoid, sigmoid, tanh]|sgd|0.001|0.1|0.001
+72.12|[784, 28, 28, 28, 10]|[sigmoid, sigmoid, tanh]|asgd|0.02|0|0.0
+71.21|[784, 28, 28, 28, 10]|[sigmoid, sigmoid, tanh]|asgd|0.02|0|0.001
+86.49|[784, 28, 28, 28, 10]|[relu, sigmoid, tanh]|adam|0.002|0|0.0
+85.04|[784, 28, 28, 28, 10]|[relu, sigmoid, tanh]|adam|0.002|0|0.001
+30.03|[784, 28, 28, 28, 10]|[relu, sigmoid, tanh]|sgd|0.001|0.1|0.0
+33.34|[784, 28, 28, 28, 10]|[relu, sigmoid, tanh]|sgd|0.001|0.1|0.001
+82.18|[784, 28, 28, 28, 10]|[relu, sigmoid, tanh]|asgd|0.02|0|0.0
+82.01|[784, 28, 28, 28, 10]|[relu, sigmoid, tanh]|asgd|0.02|0|0.001
+85.6|[784, 64, 32, 16, 8, 10]|[sigmoid, sigmoid, tanh, tanh]|adam|0.002|0|0.0
+84.0|[784, 64, 32, 16, 8, 10]|[sigmoid, sigmoid, tanh, tanh]|adam|0.002|0|0.001
+10.0|[784, 64, 32, 16, 8, 10]|[sigmoid, sigmoid, tanh, tanh]|sgd|0.001|0.1|0.0
+10.36|[784, 64, 32, 16, 8, 10]|[sigmoid, sigmoid, tanh, tanh]|sgd|0.001|0.1|0.001
+66.92|[784, 64, 32, 16, 8, 10]|[sigmoid, sigmoid, tanh, tanh]|asgd|0.02|0|0.0
+66.45|[784, 64, 32, 16, 8, 10]|[sigmoid, sigmoid, tanh, tanh]|asgd|0.02|0|0.001
+86.5|[784, 64, 32, 16, 8, 10]|[relu, sigmoid, tanh, tanh]|adam|0.002|0|0.0
+85.54|[784, 64, 32, 16, 8, 10]|[relu, sigmoid, tanh, tanh]|adam|0.002|0|0.001
+26.98|[784, 64, 32, 16, 8, 10]|[relu, sigmoid, tanh, tanh]|sgd|0.001|0.1|0.0
+17.62|[784, 64, 32, 16, 8, 10]|[relu, sigmoid, tanh, tanh]|sgd|0.001|0.1|0.001
+80.02|[784, 64, 32, 16, 8, 10]|[relu, sigmoid, tanh, tanh]|asgd|0.02|0|0.0
+81.32|[784, 64, 32, 16, 8, 10]|[relu, sigmoid, tanh, tanh]|asgd|0.02|0|0.001
+86.84|[784, 64, 32, 16, 8, 10]|[relu, sigmoid, tanh, relu]|adam|0.002|0|0.0
+84.98|[784, 64, 32, 16, 8, 10]|[relu, sigmoid, tanh, relu]|adam|0.002|0|0.001
+10.0|[784, 64, 32, 16, 8, 10]|[relu, sigmoid, tanh, relu]|sgd|0.001|0.1|0.0
+19.61|[784, 64, 32, 16, 8, 10]|[relu, sigmoid, tanh, relu]|sgd|0.001|0.1|0.001
+81.35|[784, 64, 32, 16, 8, 10]|[relu, sigmoid, tanh, relu]|asgd|0.02|0|0.0
+74.09|[784, 64, 32, 16, 8, 10]|[relu, sigmoid, tanh, relu]|asgd|0.02|0|0.001
+85.74|[784, 28, 28, 28, 28, 10]|[sigmoid, sigmoid, tanh, tanh]|adam|0.002|0|0.0
+84.95|[784, 28, 28, 28, 28, 10]|[sigmoid, sigmoid, tanh, tanh]|adam|0.002|0|0.001
+15.66|[784, 28, 28, 28, 28, 10]|[sigmoid, sigmoid, tanh, tanh]|sgd|0.001|0.1|0.0
+10.0|[784, 28, 28, 28, 28, 10]|[sigmoid, sigmoid, tanh, tanh]|sgd|0.001|0.1|0.001
+75.35|[784, 28, 28, 28, 28, 10]|[sigmoid, sigmoid, tanh, tanh]|asgd|0.02|0|0.0
+73.4|[784, 28, 28, 28, 28, 10]|[sigmoid, sigmoid, tanh, tanh]|asgd|0.02|0|0.001
+85.22|[784, 28, 28, 28, 28, 10]|[relu, sigmoid, tanh, tanh]|adam|0.002|0|0.0
+84.19|[784, 28, 28, 28, 28, 10]|[relu, sigmoid, tanh, tanh]|adam|0.002|0|0.001
+21.16|[784, 28, 28, 28, 28, 10]|[relu, sigmoid, tanh, tanh]|sgd|0.001|0.1|0.0
+31.34|[784, 28, 28, 28, 28, 10]|[relu, sigmoid, tanh, tanh]|sgd|0.001|0.1|0.001
+78.41|[784, 28, 28, 28, 28, 10]|[relu, sigmoid, tanh, tanh]|asgd|0.02|0|0.0
+79.73|[784, 28, 28, 28, 28, 10]|[relu, sigmoid, tanh, tanh]|asgd|0.02|0|0.001
+86.28|[784, 28, 28, 28, 28, 10]|[relu, sigmoid, tanh, relu]|adam|0.002|0|0.0
+85.22|[784, 28, 28, 28, 28, 10]|[relu, sigmoid, tanh, relu]|adam|0.002|0|0.001
+27.57|[784, 28, 28, 28, 28, 10]|[relu, sigmoid, tanh, relu]|sgd|0.001|0.1|0.0
+30.18|[784, 28, 28, 28, 28, 10]|[relu, sigmoid, tanh, relu]|sgd|0.001|0.1|0.001
+81.14|[784, 28, 28, 28, 28, 10]|[relu, sigmoid, tanh, relu]|asgd|0.02|0|0.0
+76.58|[784, 28, 28, 28, 28, 10]|[relu, sigmoid, tanh, relu]|asgd|0.02|0|0.001
