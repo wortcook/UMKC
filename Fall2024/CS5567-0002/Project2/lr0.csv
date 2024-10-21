@@ -1,0 +1,6 @@
+11.36,[784, 32, 16, 10],[sigmoid, tanh],adam,{'lr': 0.001, 'weight_decay': 0.0}
+10.28,[784, 32, 16, 10],[sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.0}
+10.92,[784, 32, 16, 10],[sigmoid, tanh],adam,{'lr': 0.004, 'weight_decay': 0.0}
+10.32,[784, 32, 16, 10],[sigmoid, tanh],adam,{'lr': 0.008, 'weight_decay': 0.0}
+8.28,[784, 32, 16, 10],[sigmoid, tanh],adam,{'lr': 0.01, 'weight_decay': 0.0}
+10.1,[784, 32, 16, 10],[sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.0}

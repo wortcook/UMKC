@@ -1,0 +1,192 @@
+95.84,[784, 32, 16, 10],[sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.0}
+56.72,[784, 32, 16, 10],[sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.0}
+96.11,[784, 32, 16, 10],[sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.001}
+72.75,[784, 32, 16, 10],[sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.001}
+80.97,[784, 32, 16, 10],[sigmoid, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+94.67,[784, 32, 16, 10],[sigmoid, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+75.91,[784, 32, 16, 10],[sigmoid, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+94.26,[784, 32, 16, 10],[sigmoid, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+94.72,[784, 32, 16, 10],[sigmoid, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+95.95,[784, 32, 16, 10],[sigmoid, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+93.99,[784, 32, 16, 10],[sigmoid, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+95.5,[784, 32, 16, 10],[sigmoid, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+96.13,[784, 32, 16, 10],[sigmoid, relu],adam,{'lr': 0.002, 'weight_decay': 0.0}
+10.28,[784, 32, 16, 10],[sigmoid, relu],adam,{'lr': 0.02, 'weight_decay': 0.0}
+96.06,[784, 32, 16, 10],[sigmoid, relu],adam,{'lr': 0.002, 'weight_decay': 0.001}
+83.76,[784, 32, 16, 10],[sigmoid, relu],adam,{'lr': 0.02, 'weight_decay': 0.001}
+78.76,[784, 32, 16, 10],[sigmoid, relu],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+94.83,[784, 32, 16, 10],[sigmoid, relu],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+77.18,[784, 32, 16, 10],[sigmoid, relu],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+94.43,[784, 32, 16, 10],[sigmoid, relu],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+94.01,[784, 32, 16, 10],[sigmoid, relu],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+95.82,[784, 32, 16, 10],[sigmoid, relu],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+93.98,[784, 32, 16, 10],[sigmoid, relu],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+94.97,[784, 32, 16, 10],[sigmoid, relu],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+96.36,[784, 28, 28, 10],[sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.0}
+35.75,[784, 28, 28, 10],[sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.0}
+95.31,[784, 28, 28, 10],[sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.001}
+80.13,[784, 28, 28, 10],[sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.001}
+81.82,[784, 28, 28, 10],[sigmoid, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+94.51,[784, 28, 28, 10],[sigmoid, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+83.42,[784, 28, 28, 10],[sigmoid, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+94.19,[784, 28, 28, 10],[sigmoid, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+94.29,[784, 28, 28, 10],[sigmoid, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+95.5,[784, 28, 28, 10],[sigmoid, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+93.59,[784, 28, 28, 10],[sigmoid, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+95.21,[784, 28, 28, 10],[sigmoid, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+95.37,[784, 28, 28, 10],[sigmoid, relu],adam,{'lr': 0.002, 'weight_decay': 0.0}
+37.15,[784, 28, 28, 10],[sigmoid, relu],adam,{'lr': 0.02, 'weight_decay': 0.0}
+95.89,[784, 28, 28, 10],[sigmoid, relu],adam,{'lr': 0.002, 'weight_decay': 0.001}
+79.77,[784, 28, 28, 10],[sigmoid, relu],adam,{'lr': 0.02, 'weight_decay': 0.001}
+77.9,[784, 28, 28, 10],[sigmoid, relu],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+94.79,[784, 28, 28, 10],[sigmoid, relu],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+83.86,[784, 28, 28, 10],[sigmoid, relu],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+94.25,[784, 28, 28, 10],[sigmoid, relu],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+94.69,[784, 28, 28, 10],[sigmoid, relu],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+95.97,[784, 28, 28, 10],[sigmoid, relu],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+94.07,[784, 28, 28, 10],[sigmoid, relu],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+95.22,[784, 28, 28, 10],[sigmoid, relu],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+96.75,[784, 64, 32, 10],[sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.0}
+21.14,[784, 64, 32, 10],[sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.0}
+96.58,[784, 64, 32, 10],[sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.001}
+79.74,[784, 64, 32, 10],[sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.001}
+84.58,[784, 64, 32, 10],[sigmoid, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+94.81,[784, 64, 32, 10],[sigmoid, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+84.63,[784, 64, 32, 10],[sigmoid, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+94.5,[784, 64, 32, 10],[sigmoid, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+94.47,[784, 64, 32, 10],[sigmoid, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+96.35,[784, 64, 32, 10],[sigmoid, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+94.11,[784, 64, 32, 10],[sigmoid, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+96.04,[784, 64, 32, 10],[sigmoid, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+96.05,[784, 64, 32, 10],[sigmoid, relu],adam,{'lr': 0.002, 'weight_decay': 0.0}
+11.35,[784, 64, 32, 10],[sigmoid, relu],adam,{'lr': 0.02, 'weight_decay': 0.0}
+96.15,[784, 64, 32, 10],[sigmoid, relu],adam,{'lr': 0.002, 'weight_decay': 0.001}
+83.83,[784, 64, 32, 10],[sigmoid, relu],adam,{'lr': 0.02, 'weight_decay': 0.001}
+82.17,[784, 64, 32, 10],[sigmoid, relu],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+94.98,[784, 64, 32, 10],[sigmoid, relu],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+82.97,[784, 64, 32, 10],[sigmoid, relu],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+94.82,[784, 64, 32, 10],[sigmoid, relu],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+95.07,[784, 64, 32, 10],[sigmoid, relu],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+96.42,[784, 64, 32, 10],[sigmoid, relu],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+94.35,[784, 64, 32, 10],[sigmoid, relu],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+95.9,[784, 64, 32, 10],[sigmoid, relu],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+96.61,[784, 64, 32, 16, 10],[sigmoid, sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.0}
+69.82,[784, 64, 32, 16, 10],[sigmoid, sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.0}
+95.61,[784, 64, 32, 16, 10],[sigmoid, sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.001}
+84.74,[784, 64, 32, 16, 10],[sigmoid, sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.001}
+13.33,[784, 64, 32, 16, 10],[sigmoid, sigmoid, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+92.5,[784, 64, 32, 16, 10],[sigmoid, sigmoid, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+14.15,[784, 64, 32, 16, 10],[sigmoid, sigmoid, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+92.62,[784, 64, 32, 16, 10],[sigmoid, sigmoid, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+91.56,[784, 64, 32, 16, 10],[sigmoid, sigmoid, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+94.98,[784, 64, 32, 16, 10],[sigmoid, sigmoid, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+91.11,[784, 64, 32, 16, 10],[sigmoid, sigmoid, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+94.83,[784, 64, 32, 16, 10],[sigmoid, sigmoid, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+96.61,[784, 64, 32, 16, 10],[relu, sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.0}
+82.84,[784, 64, 32, 16, 10],[relu, sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.0}
+96.62,[784, 64, 32, 16, 10],[relu, sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.001}
+85.48,[784, 64, 32, 16, 10],[relu, sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.001}
+66.92,[784, 64, 32, 16, 10],[relu, sigmoid, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+95.9,[784, 64, 32, 16, 10],[relu, sigmoid, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+68.26,[784, 64, 32, 16, 10],[relu, sigmoid, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+95.93,[784, 64, 32, 16, 10],[relu, sigmoid, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+95.46,[784, 64, 32, 16, 10],[relu, sigmoid, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+96.75,[784, 64, 32, 16, 10],[relu, sigmoid, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+95.3,[784, 64, 32, 16, 10],[relu, sigmoid, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+96.53,[784, 64, 32, 16, 10],[relu, sigmoid, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+95.87,[784, 28, 28, 28, 10],[sigmoid, sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.0}
+36.88,[784, 28, 28, 28, 10],[sigmoid, sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.0}
+95.44,[784, 28, 28, 28, 10],[sigmoid, sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.001}
+83.81,[784, 28, 28, 28, 10],[sigmoid, sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.001}
+16.22,[784, 28, 28, 28, 10],[sigmoid, sigmoid, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+91.69,[784, 28, 28, 28, 10],[sigmoid, sigmoid, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+15.04,[784, 28, 28, 28, 10],[sigmoid, sigmoid, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+91.59,[784, 28, 28, 28, 10],[sigmoid, sigmoid, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+91.67,[784, 28, 28, 28, 10],[sigmoid, sigmoid, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+94.78,[784, 28, 28, 28, 10],[sigmoid, sigmoid, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+91.55,[784, 28, 28, 28, 10],[sigmoid, sigmoid, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+94.07,[784, 28, 28, 28, 10],[sigmoid, sigmoid, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+95.31,[784, 28, 28, 28, 10],[relu, sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.0}
+72.62,[784, 28, 28, 28, 10],[relu, sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.0}
+95.73,[784, 28, 28, 28, 10],[relu, sigmoid, tanh],adam,{'lr': 0.002, 'weight_decay': 0.001}
+86.43,[784, 28, 28, 28, 10],[relu, sigmoid, tanh],adam,{'lr': 0.02, 'weight_decay': 0.001}
+71.93,[784, 28, 28, 28, 10],[relu, sigmoid, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+94.48,[784, 28, 28, 28, 10],[relu, sigmoid, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+76.9,[784, 28, 28, 28, 10],[relu, sigmoid, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+94.58,[784, 28, 28, 28, 10],[relu, sigmoid, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+94.7,[784, 28, 28, 28, 10],[relu, sigmoid, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+95.09,[784, 28, 28, 28, 10],[relu, sigmoid, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+93.97,[784, 28, 28, 28, 10],[relu, sigmoid, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+95.83,[784, 28, 28, 28, 10],[relu, sigmoid, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+96.64,[784, 64, 32, 16, 8, 10],[sigmoid, sigmoid, tanh, tanh],adam,{'lr': 0.002, 'weight_decay': 0.0}
+10.32,[784, 64, 32, 16, 8, 10],[sigmoid, sigmoid, tanh, tanh],adam,{'lr': 0.02, 'weight_decay': 0.0}
+95.51,[784, 64, 32, 16, 8, 10],[sigmoid, sigmoid, tanh, tanh],adam,{'lr': 0.002, 'weight_decay': 0.001}
+45.37,[784, 64, 32, 16, 8, 10],[sigmoid, sigmoid, tanh, tanh],adam,{'lr': 0.02, 'weight_decay': 0.001}
+11.35,[784, 64, 32, 16, 8, 10],[sigmoid, sigmoid, tanh, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+90.82,[784, 64, 32, 16, 8, 10],[sigmoid, sigmoid, tanh, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+11.35,[784, 64, 32, 16, 8, 10],[sigmoid, sigmoid, tanh, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+90.62,[784, 64, 32, 16, 8, 10],[sigmoid, sigmoid, tanh, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+91.57,[784, 64, 32, 16, 8, 10],[sigmoid, sigmoid, tanh, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+94.15,[784, 64, 32, 16, 8, 10],[sigmoid, sigmoid, tanh, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+89.94,[784, 64, 32, 16, 8, 10],[sigmoid, sigmoid, tanh, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+93.96,[784, 64, 32, 16, 8, 10],[sigmoid, sigmoid, tanh, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+95.85,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, tanh],adam,{'lr': 0.002, 'weight_decay': 0.0}
+32.41,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, tanh],adam,{'lr': 0.02, 'weight_decay': 0.0}
+96.23,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, tanh],adam,{'lr': 0.002, 'weight_decay': 0.001}
+82.4,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, tanh],adam,{'lr': 0.02, 'weight_decay': 0.001}
+34.38,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+95.62,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+38.87,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+95.3,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+95.48,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+96.19,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+94.45,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+96.02,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+96.43,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, relu],adam,{'lr': 0.002, 'weight_decay': 0.0}
+11.35,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, relu],adam,{'lr': 0.02, 'weight_decay': 0.0}
+94.57,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, relu],adam,{'lr': 0.002, 'weight_decay': 0.001}
+80.13,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, relu],adam,{'lr': 0.02, 'weight_decay': 0.001}
+53.72,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, relu],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+95.18,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, relu],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+22.39,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, relu],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+95.23,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, relu],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+95.37,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, relu],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+95.82,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, relu],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+93.83,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, relu],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+95.69,[784, 64, 32, 16, 8, 10],[relu, sigmoid, tanh, relu],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+95.08,[784, 28, 28, 28, 28, 10],[sigmoid, sigmoid, tanh, tanh],adam,{'lr': 0.002, 'weight_decay': 0.0}
+60.25,[784, 28, 28, 28, 28, 10],[sigmoid, sigmoid, tanh, tanh],adam,{'lr': 0.02, 'weight_decay': 0.0}
+95.41,[784, 28, 28, 28, 28, 10],[sigmoid, sigmoid, tanh, tanh],adam,{'lr': 0.002, 'weight_decay': 0.001}
+81.52,[784, 28, 28, 28, 28, 10],[sigmoid, sigmoid, tanh, tanh],adam,{'lr': 0.02, 'weight_decay': 0.001}
+11.35,[784, 28, 28, 28, 28, 10],[sigmoid, sigmoid, tanh, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+92.59,[784, 28, 28, 28, 28, 10],[sigmoid, sigmoid, tanh, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+11.35,[784, 28, 28, 28, 28, 10],[sigmoid, sigmoid, tanh, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+92.04,[784, 28, 28, 28, 28, 10],[sigmoid, sigmoid, tanh, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+91.33,[784, 28, 28, 28, 28, 10],[sigmoid, sigmoid, tanh, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+93.82,[784, 28, 28, 28, 28, 10],[sigmoid, sigmoid, tanh, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+90.01,[784, 28, 28, 28, 28, 10],[sigmoid, sigmoid, tanh, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+91.5,[784, 28, 28, 28, 28, 10],[sigmoid, sigmoid, tanh, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+95.13,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, tanh],adam,{'lr': 0.002, 'weight_decay': 0.0}
+9.82,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, tanh],adam,{'lr': 0.02, 'weight_decay': 0.0}
+95.28,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, tanh],adam,{'lr': 0.002, 'weight_decay': 0.001}
+88.33,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, tanh],adam,{'lr': 0.02, 'weight_decay': 0.001}
+54.53,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+95.05,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+65.04,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, tanh],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+95.46,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, tanh],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+93.94,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+95.14,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+94.48,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, tanh],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+91.96,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, tanh],asgd,{'lr': 0.02, 'weight_decay': 0.001}
+95.09,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, relu],adam,{'lr': 0.002, 'weight_decay': 0.0}
+10.28,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, relu],adam,{'lr': 0.02, 'weight_decay': 0.0}
+95.16,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, relu],adam,{'lr': 0.002, 'weight_decay': 0.001}
+78.7,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, relu],adam,{'lr': 0.02, 'weight_decay': 0.001}
+46.38,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, relu],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.0}
+94.71,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, relu],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.0}
+45.46,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, relu],sgd,{'lr': 0.001, 'momentum': 0.1, 'weight_decay': 0.001}
+94.71,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, relu],sgd,{'lr': 0.01, 'momentum': 0.1, 'weight_decay': 0.001}
+94.82,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, relu],asgd,{'lr': 0.01, 'weight_decay': 0.0}
+95.82,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, relu],asgd,{'lr': 0.02, 'weight_decay': 0.0}
+94.83,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, relu],asgd,{'lr': 0.01, 'weight_decay': 0.001}
+95.69,[784, 28, 28, 28, 28, 10],[relu, sigmoid, tanh, relu],asgd,{'lr': 0.02, 'weight_decay': 0.001}
