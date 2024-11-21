@@ -1,3 +1,4 @@
+score|topology|activations|optimizer|learning rate|momentum|decay
 95.54|[784, 32, 16, 10]|[sigmoid, tanh]|adam|0.002|0|0.001
 53.1|[784, 32, 16, 10]|[sigmoid, tanh]|sgd|0.001|0.1|0.0
 48.77|[784, 32, 16, 10]|[sigmoid, tanh]|sgd|0.001|0.1|0.001
