@@ -52,10 +52,15 @@ def main():
     '''
     data = parse_bbc_text('bbc-text.csv')
     
-    print(data[0])
+    #now write out the tokens to a new file with the a new column indicating the tags for each token
     
-if __name__ == '__main__':
-    main()
-
+    with open('bbc-text-tokens.csv', 'w', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        
+        #write the header
+        writer.writerow(['category', 'text', 'tokens'])
+        
+        for record in data:
+            writer.writerow([record['category'], record['text'], record['tokens']])
             
             
