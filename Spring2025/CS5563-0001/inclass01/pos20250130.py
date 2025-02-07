@@ -1,5 +1,3 @@
-import csv
-
 #suppress warnings
 import warnings
 warnings.filterwarnings('ignore')
@@ -8,42 +6,57 @@ warnings.filterwarnings('ignore')
 import nltk
 import polars as pl
 from nltk.tokenize import word_tokenize
+from collections import Counter
 
 nltk.download('punkt')
 nltk.download('tagsets')
 nltk.download('averaged_perceptron_tagger_eng')
 
+def tokenize(df):
+    '''
+    This function tokenizes the text column in the dataframe.
+    '''
+    return df.with_columns(pl.col('text').map_elements(word_tokenize).alias('tokens'))
 
-#import bbc-text.csv file into polars
-df = pl.read_csv('bbc-text.csv')
+def tag(df):
+    '''
+    This function tags the tokens in the dataframe.
+    '''
+    # df.with_columns(pl.col('tokens').map_elements(nltk.pos_tag).alias('tagged_tokens'))
+    #for each row in tokens, create a new column with just the tags that are in the second element of the tuple
+    return df.with_columns(pl.col('tokens').map_elements(lambda x: [y[1] for y in nltk.pos_tag(x)]).alias('token_tags'))
 
-print(df.head())
 
-# for each transform the text column to a new tokens column
-df = df.with_columns(pl.col('text').map_elements(word_tokenize).alias('tokens'))
+def count_tags(df):
+    '''
+    This function counts the tags in the dataframe.
+    '''    
+    #for each row in the token_tags column get a count of the tags and return the counts as a dictionary of tags to total counts
+    return Counter([tag for tags in df['token_tags'] for tag in tags])
 
-print(df.head())  
+#create a polars pipeline to tokenize the text column
+df = (pl.read_csv('bbc-text.csv')
+      .pipe(tokenize)
+      .pipe(tag)
+      )
 
-df = df.explode('tokens')
+tag_counts = count_tags(df)
 
-#get tokens as numpy array
-tokens = df['tokens'].to_numpy()
+#sort by the values
+tag_counts = dict(sorted(tag_counts.items(), key=lambda x: x[1], reverse=True))
 
-#tag the tokens with their part of speech
-tagged_tokens = nltk.pos_tag(tokens)
+#print the tag counts as a formatted table
+print(f"{'Tag':<10} {'Count':<10}")
+for tag, count in tag_counts.items():
+    print(f"{tag:<10} {count:<10}")
 
-#create new dataframe with the tagged token, the first element is the word and the second element is the tag
-tagged_tokens = pl.DataFrame(tagged_tokens, schema=['word', 'tag'])
-
-print(tagged_tokens.head())
-
-#get the counts of each tag and create a seaborn plot of the counts showing from most to least common
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-tagged_tokens = tagged_tokens.group_by('tag').agg(pl.count('word').alias('count')).sort('count', descending=True)
-
-sns.barplot(data=tagged_tokens.to_pandas(), x='tag', y='count')
+#plot the tag counts
+sns.barplot(x=tag_counts.keys(), y=tag_counts.values())
+#rotate the x-axis labels
 plt.xticks(rotation=90)
 
 plt.show()
+
