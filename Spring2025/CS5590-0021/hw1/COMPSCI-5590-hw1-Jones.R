@@ -1,3 +1,7 @@
+#CS5590-0025 Homework 1                                      Thomas Jones
+#Date: March 4, 2025                                             08206472
+#
+
 library(e1071)
 
 # Assuming ms.drg.2018 is already loaded
@@ -16,7 +20,8 @@ summary_stats <- function(data, column, stats_functions) {
   sapply(stats_functions, function(f) f(data[[column]], na.rm = TRUE))
 }
 
-columns <- c("total_discharges", "average_covered_charges", "average_total_payments", "average_medicare_payments")
+columns <- c("total_discharges", "average_covered_charges", 
+             "average_total_payments", "average_medicare_payments")
 
 # List of functions to generate statistics
 stats_functions <- list(
@@ -55,8 +60,12 @@ print(summary_table)
 # Question 2
 ########################
 #First filter out any rows not within 2 standard deviations of the mean
-df.mo.filtered = df.mo[abs(df.mo$average_total_payments - mean(df.mo$average_total_payments)) < 2*sd(df.mo$average_total_payments),]
-df.ca.filtered = df.ca[abs(df.ca$average_total_payments - mean(df.ca$average_total_payments)) < 2*sd(df.ca$average_total_payments),]
+df.mo.filtered = df.mo[abs(df.mo$average_total_payments - 
+                           mean(df.mo$average_total_payments)) 
+                       < 2*sd(df.mo$average_total_payments),]
+df.ca.filtered = df.ca[abs(df.ca$average_total_payments - 
+                           mean(df.ca$average_total_payments)) 
+                       < 2*sd(df.ca$average_total_payments),]
 
 #Create a combined boxplot of the two states
 boxplot( df.mo.filtered$average_total_payments, 
@@ -140,16 +149,21 @@ library(plyr)
 
 #Create new dataframe only constaining rows with drg_definition containing "CARDIAC"
 # and state = CA, WY, ID, NY, KS, and MO
-df.cardiac = df[grepl("CARDIAC", df$drg_definition) & df$state %in% c("CA", "WY", "ID", "NY", "KS", "MO"),]
+df.cardiac = df[grepl("CARDIAC", df$drg_definition) & 
+                df$state %in% c("CA", "WY", "ID", "NY", "KS", "MO"),]
 
-#Using ddply find summary statistics for state = CA, WY, ID, NY, KS, and MO and calculate average total_discharges,
-#median total_discharges, average covered_charges, and average total_payments
-df.cardiac.summary = ddply(df.cardiac, .(state), summarise, 
-                           avg_total_discharges = mean(total_discharges, na.rm = TRUE),
-                           median_total_discharges = median(total_discharges, na.rm = TRUE),
-                           avg_covered_charges = mean(average_covered_charges, na.rm = TRUE),
-                           avg_total_payments = mean(average_total_payments, na.rm = TRUE)
-                          )
+# Using ddply find summary statistics for state = CA, WY, ID, NY, KS, and MO 
+# and calculate average total_discharges, median total_discharges, 
+# average covered_charges, and average total_payments
+df.cardiac.summary = 
+  ddply(df.cardiac, 
+        .(state), 
+        summarise, 
+        avg_total_discharges = mean(total_discharges, na.rm = TRUE),
+        median_total_discharges = median(total_discharges, na.rm = TRUE),
+        avg_covered_charges = mean(average_covered_charges, na.rm = TRUE),
+        avg_total_payments = mean(average_total_payments, na.rm = TRUE)
+  )
 
 
 print(df.cardiac.summary)
