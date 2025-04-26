@@ -1,73 +1,100 @@
-speed_data <- read.csv("/Users/thomasjones/workspace/UMKC/Spring2025/CS5590-0021/hw2/speed.data.csv")
+#CS5590-0025 Homework 1                                      Thomas Jones
+#Date: March 4, 2025                                             08206472
+library(e1071)
+library(EnvStats)
 
-# Load necessary libraries
-library(ggplot2)
-library(tidyr)
+#LOAD THE DATA FROM LOCAL DIRECTORY
+df <- read.csv("/Users/thomasjones/workspace/UMKC/Spring2025/CS5590-0021/hw2/speed.data.csv")
+
+head(df)
+
+speed_before <- df$speed_before
+speed_before.n <- length(speed_before)
+
+speed_after <- df$speed_after
+speed_after.cleaned = speed_after[!is.na(speed_after)]
+speed_after.n <- length(df$speed_after) - colSums(is.na(df))["speed_after"]
 
 ############################
 # 1
 # Generate boxplots for vehicular before and after speeds data. Discuss and compare the results. 
 ############################
-# Assuming your data is in a data frame called 'speed_data'
-# If not, you can create it like this:
-# speed_data <- data.frame(speed_before = c(...), speed_after = c(...))
 
-# Reshape data for better visualization (long format)
-speed_data_long <- pivot_longer(speed_data, 
-                                cols = c("speed_before", "speed_after"),
-                                names_to = "period", 
-                                values_to = "speed")
+boxplot( speed_before,
+         speed_after,
+         names = c("Speed Before", "Speed After"), 
+         xlab = "Before/After", 
+         ylab = "MPH", 
+         main = "Average MPH Before/After Legislation",
+         col = c("slategray", "slategray2"),
+         horizontal = FALSE
+)
 
-# Create boxplot
-ggplot(speed_data_long, aes(x = period, y = speed, fill = period)) +
-  geom_boxplot() +
-  labs(title = "Comparison of Vehicle Speeds Before and After Legislative Changes",
-       x = "Period",
-       y = "Speed (units)") +
-  scale_fill_manual(values = c("speed_before" = "lightblue", "speed_after" = "lightgreen")) +
-  theme_minimal()
+# Calculate summary statistics
+summary_stats <- function(data, column, stats_functions) {
+  sapply(stats_functions, function(f) f(data[[column]], na.rm = TRUE))
+}
 
-# Add some basic statistics
-before_stats <- summary(speed_data$speed_before)
-after_stats <- summary(speed_data$speed_after)
+columns <- c("speed_before", "speed_after")
 
-cat("\nSpeed Before Legislative Changes:\n")
-print(before_stats)
+# List of functions to generate statistics
+stats_functions <- list(
+  mean = mean,
+  median = median,
+  sd = sd,
+  skewness = skewness,
+  kurtosis = kurtosis
+)
 
-cat("\nSpeed After Legislative Changes:\n")
-print(after_stats)
+# Create a data frame to store summary statistics
+summary_table <- data.frame(
+  Measure = rep(c("Before", "After")),
+  Mean = numeric(1),
+  Median = numeric(1),
+  SD = numeric(1),
+  Skewness = numeric(1),
+  Kurtosis = numeric(1)
+)
 
-# Perform paired t-test to check for significant difference
-t_test_result <- t.test(speed_data$speed_before, speed_data$speed_after, paired = TRUE)
-cat("\nPaired t-test results:\n")
-print(t_test_result)
+# Fill the data frame with summary statistics
+for (i in 1:length(columns)) {
+  stats <- summary_stats(df, columns[i], stats_functions)
+  summary_table[i, 2:6] <- stats
+}
+
+# Print the summary table
+print(summary_table)
+
 
 ############################
 # 2
 # Generate 99% confidence intervals for mean vehicular before-speed data, assuming the population
 # variance is unknown. Explain each step and interpret the results. 
 ############################
-# Calculate 99% CI for speed_before (unknown population variance)
-speed_before <- speed_data$speed_before
-n <- length(speed_before)
-sample_mean <- mean(speed_before)
-sample_sd <- sd(speed_before)
-standard_error <- sample_sd / sqrt(n)
+sprintf("Length of data: %i",speed_before.n)
 
-# Critical t-value (two-tailed)
-t_critical <- qt(0.995, df = n - 1)  # 0.995 because 1 - (1-0.99)/2
+speed_before.sample_mean <- mean(speed_before, na.rm = TRUE)
 
-# Calculate confidence interval
-ci_lower <- sample_mean - t_critical * standard_error
-ci_upper <- sample_mean + t_critical * standard_error
+sprintf("Sample mean: %.2f", speed_before.sample_mean)
 
-# Print results
-cat("99% Confidence Interval for Mean Before-Speed:\n")
-cat(sprintf("Lower bound: %.2f\nUpper bound: %.2f\n", ci_lower, ci_upper))
-cat(sprintf("Sample mean: %.2f\nMargin of error: ±%.2f\n", 
-            sample_mean, t_critical * standard_error))
+speed_before.sample_sd <- sd(speed_before, na.rm = TRUE)
 
-t.test(speed_before, conf.level = 0.99)$conf.int
+sprintf("Sample standard deviation: %.2f", speed_before.sample_sd)
+
+speed_before.standard_error <- speed_before.sample_sd / sqrt(speed_before.n)
+
+sprintf("Standard error: %.2f", speed_before.standard_error)
+
+t_critical <- qt(0.995, df = speed_before.n - 1)
+
+sprintf("t-critical: %.2f", t_critical)
+
+ci_lower <- speed_before.sample_mean - t_critical * speed_before.standard_error
+ci_upper <- speed_before.sample_mean + t_critical * speed_before.standard_error
+
+print("99% Confidence Interval for Mean Before-Speed:")
+sprintf("Lower bound: %.2f", ci_lower)
+sprintf("Upper bound: %.2f", ci_upper)
 
 ############################
 # 3
@@ -75,151 +102,155 @@ t.test(speed_before, conf.level = 0.99)$conf.int
 # the results.
 ############################
 # Extract after-speed data
-speed_after <- speed_data$speed_after
-n <- length(speed_after)
-sample_var <- var(speed_after)  # Sample variance (s²)
+sprintf("Length of data: %i",speed_after.n)
+
+speed_after.sample_var <- var(speed_after, na.rm=TRUE)
+
+sprintf("Sample variance: %.2f", speed_after.sample_var)
 
 # Chi-squared critical values (for 90% CI)
 alpha <- 0.10
 chi_sq_lower <- qchisq(1 - alpha/2, df = n - 1)
 chi_sq_upper <- qchisq(alpha/2, df = n - 1)
 
+sprintf("Chi-squared lower: %.2f", chi_sq_lower)
+sprintf("Chi-squared upper: %.2f", chi_sq_upper)
+
 # Calculate CI for variance
 ci_lower_var <- ((n - 1) * sample_var) / chi_sq_lower
 ci_upper_var <- ((n - 1) * sample_var) / chi_sq_upper
 
 # Print results
-cat("90% Confidence Interval for After-Speed Variance:\n")
-cat(sprintf("Lower bound: %.2f\nUpper bound: %.2f\n", ci_lower_var, ci_upper_var))
-cat(sprintf("Sample variance (s²): %.2f\n", sample_var))
+print("90% Confidence Interval for After-Speed Variance:\n")
+sprintf("Lower bound: %.2f", ci_lower_var)
+sprintf("Upper bound: %.2f\n", ci_upper_var)
 
 ###############################
 # 4
 # Test whether the mean speed is equal to 65 mph after repealing the speed limit at the α=1%
 # significance level. Write each step of the hypotheses test and interpret the results. 
 ###############################
-speed_after <- speed_data$speed_after
-n <- length(speed_after)
-sample_mean <- mean(speed_after)
-sample_sd <- sd(speed_after)
-mu0 <- 65
+speed_after.sample_mean <- mean(speed_after,na.rm = TRUE)
 
-t_stat <- (sample_mean - mu0) / (sample_sd / sqrt(n))
-cat("t-test statistic:", t_stat, "\n")
+sprintf("Speed after sample mean: %.2f", speed_after.sample_mean)
+
+speed_after.sample_sd <- sd(speed_after,na.rm = TRUE)
+
+test_speed <- 65
+t_stat <- (speed_after.sample_mean - test_speed) / ((speed_after.sample_sd/sqrt(speed_after.n-1)))
+sprintf("t-test statistic: %.2f", t_stat)
+
+p_value = 2*pt(abs(t_stat), df=(speed_after.n - 1))
+
+sprintf("p-value: %.4f", p_value)
+
+
+if (p_value > significance_level) {
+  sprintf("Null hypothesis rejected, the actual mean speed is not %.0f", test_speed)
+} else {
+  sprintf("Failed to reject null hypothesis, the actual mean speed is %.0f", test_speed)
+}
+
+the_test = t.test(x=speed_after, mu=test_speed, conf.level=0.995)
+
+print(the_test)
+
 
 ##############################
 # 5
 # Test whether the variance of after-speed data is less than 18 mph at the α=5% significance level. Write
 # each step of the hypotheses test and interpret the results. 
 #############################
-# Load data
-speed_after <- speed_data$speed_after
-n <- length(speed_after)
-cat("Length of speed_after",n)
-speed_after <- speed_data$speed_after[!is.na(speed_data$speed_after)]
-sigma0_squared <- 18
-sample_var = var(speed_after)
-cat("Sample Var", sample_var)
+test_value <- 40
 
-# Test statistic
-chi_sq_stat <- (n - 1) * sample_var / sigma0_squared
+sprintf("Sample variance: %.2f", speed_after.sample_var)
 
-# Critical value (left-tailed)
+chi_sq_stat <- (n - 1) * speed_after.sample_var / test_value
+
+sprintf("Chi-squared: %.2f", chi_sq_stat)
+
 alpha <- 0.05
 chi_sq_critical <- qchisq(alpha, df = n - 1)
 
-# p-value
-p_value <- pchisq(chi_sq_stat, df = n - 1)
+sprintf("Critical value: %.2f", chi_sq_critical)
 
-# Results
-cat("--- Variance Hypothesis Test ---\n")
-cat("Sample variance (s²):", sample_var, "\n")
-cat("Chi-squared statistic:", chi_sq_stat, "\n")
-cat("Critical value (α=0.05):", chi_sq_critical, "\n")
-cat("p-value:", p_value, "\n")
-
-# Decision
 if (chi_sq_stat < chi_sq_critical) {
-  cat("Conclusion: Reject H₀. Variance is LESS than 18 mph².\n")
+  sprintf("Failed to reject null hypothesis, greater less than 18  %.0f", test_value)
 } else {
-  cat("Conclusion: Fail to reject H₀. No evidence variance < 18 mph².\n")
+  sprintf("Null hypothesis rejected, variance less than 18  than %.0f", test_value)
 }
+
+the_test = varTest(x=speed_after.cleaned, alternative="less", sigma.squared=test_value)
+
+print(the_test)
 
 #############################
 # 6
 # Test that the vehicular before-speed variance is less than after-speed at the α=10% significance level.
 # Write each step of the hypotheses test and interpret the results.
 #############################
-# Step 1: Data Prep
-speed_before <- speed_data$speed_before
-speed_after <- speed_data$speed_after[!is.na(speed_data$speed_after)]
+speed_before.sample_var = var(speed_before, na.rm = TRUE)
 
-# Step 2: Compute Variances and F-statistic
-var_before <- var(speed_before)
-var_after <- var(speed_after)
-f_stat <- var_before / var_after
+sprintf("Speed before variance: %.2f", speed_before.sample_var)
+sprintf("Speed after variance: %.2f", speed_after.sample_var)
 
-# Step 3: Critical Value (Left-tailed)
+f_stat <- speed_before.sample_var / speed_after.sample_var
+
+sprintf("f_stat: %.2f", f_stat)
+
 alpha <- 0.10
-df_before <- length(speed_before) - 1
-df_after <- length(speed_after) - 1
-f_critical <- qf(alpha, df1 = df_before, df2 = df_after)
 
-# Step 4: p-value
-p_value <- pf(f_stat, df1 = df_before, df2 = df_after)
+f_critical <- qf(alpha, df1 = speed_before.n - 1, df2 = speed_after.n -1)
 
-# Results
-cat("--- F-Test for Variance Comparison (Before < After) ---\n")
-cat("Sample variance (before):", var_before, "\n")
-cat("Sample variance (after):", var_after, "\n")
-cat("F-statistic:", f_stat, "\n")
-cat("Critical F-value (α=0.10):", f_critical, "\n")
-cat("p-value:", p_value, "\n")
+sprintf("f_critical: %.2f", f_critical)
 
 # Decision
 if (f_stat < f_critical) {
-  cat("Conclusion: Reject H₀. Before-speed variance is SMALLER (α=0.10).\n")
+  cat("Before-speed variance is less than after.\n")
 } else {
-  cat("Conclusion: Fail to reject H₀. No evidence before variance < after.\n")
+  cat("No evidence before variance < after.\n")
 }
+
+the_test = var.test(speed_before, speed_after, alternative="less", conf.level = 0.90)
+print(the_test)
 
 #################################
 # 7
 # Test that the vehicular after-speed mean is greater than before-speed at the α=5% significance level.
 # Write each step of the hypotheses test and interpret the results. 
 #################################
-# Step 1: Data Prep
-speed_before <- speed_data$speed_before
-speed_after <- speed_data$speed_after[!is.na(speed_data$speed_after)]
+sbv = speed_before.sample_var/speed_before.n
+sav = speed_after.sample_var/speed_after.n
 
-# Step 2: Check Normality
-shapiro_before <- shapiro.test(speed_before)
-shapiro_after <- shapiro.test(speed_after)
-if (shapiro_before$p.value < 0.05 | shapiro_after$p.value < 0.05) {
-  warning("Data may not be normal; consider Mann-Whitney U test.")
+degrees_freedom = ((sbv + sav)^2)/( ((sbv^2)/(speed_before.n - 1)) + ((sav)^2)/(speed_after.n - 1))
+                  
+sprintf("Degrees of freedom: %.2f", degrees_freedom)
+
+t_stat = ((speed_before.sample_mean - speed_after.sample_mean))/sqrt(sbv+sav)
+
+sprintf("t-statistic: %.2f", t_stat)
+
+p_value = dt(t_stat, degrees_freedom)
+
+sprintf("p-value: %.2f", p_value)
+
+alpha = 0.05
+
+if(p_value < alpha){
+  print("Null hypothesis rejected, speed after is greater than speed before.")
+}else{
+  print("Null hypotheis not rejected, no evidence")
 }
 
-# Step 3: Check Equal Variance
-var_test <- var.test(speed_before, speed_after)
+var_test <- var.test(speed_before, speed_after.cleaned)
 equal_var <- var_test$p.value > 0.05
 
 # Step 4: Run t-test
-t_test_result <- t.test(speed_after, speed_before,
+t_test_result <- t.test(speed_after.cleaned, speed_before,
                         alternative = "greater",
                         var.equal = equal_var)
 
-# Step 5: Results
-cat("--- t-Test for Mean Comparison (After > Before) ---\n")
-cat("Sample means:\nBefore:", mean(speed_before), "\nAfter:", mean(speed_after), "\n")
-cat("t-statistic:", t_test_result$statistic, "\n")
-cat("p-value:", t_test_result$p.value, "\n")
-
-# Step 6: Decision
-if (t_test_result$p.value < 0.05) {
-  cat("Conclusion: Reject H₀. After-speed mean is GREATER (α=0.05).\n")
-} else {
-  cat("Conclusion: Fail to reject H₀. No evidence after > before.\n")
-}
+print(t_test_result)
 
 ################################
 # 8
@@ -227,34 +258,38 @@ if (t_test_result$p.value < 0.05) {
 # of speeds before and after are equal. Draw density plots using before and after speed data. Interpret the
 # results based on both the test and drawing.
 ################################
-# Load libraries
-library(ggplot2)
-
-# Step 1: Data Prep
-speed_before <- speed_data$speed_before
-speed_after <- na.omit(speed_data$speed_after)
-
-# Step 2: Mann-Whitney Test
-wilcox_result <- wilcox.test(speed_before, speed_after, 
+wilcox_result <- wilcox.test(speed_before, speed_after.cleaned, 
                              alternative = "two.sided",
                              conf.int = TRUE)
-cat("--- Mann-Whitney-Wilcoxon Test ---\n")
+
 print(wilcox_result)
 
-# Step 3: Density Plot
+alpha = 0.05
+
+if(wilcox_result$p.value < alpha){
+  print("The two distributions ")
+}
+
 plot_data <- data.frame(
   speed = c(speed_before, speed_after),
   group = rep(c("Before", "After"), 
               c(length(speed_before), length(speed_after)))
 )
 
-ggplot(plot_data, aes(x = speed, fill = group)) +
-  geom_density(alpha = 0.5) +
-  labs(title = "Speed Distributions Before vs. After Legislative Changes",
-       x = "Speed (mph)",
-       y = "Density") +
-  theme_minimal()
 
-# Step 4: Effect Size (Optional)
-# Hodges-Lehmann estimator (pseudo-median difference)
-cat("\nHodges-Lehmann Estimator (Median Difference):", wilcox_result$estimate, "\n")
+d_before <- density(speed_before, na.rm = TRUE)
+d_after <- density(speed_after, na.rm = TRUE)
+
+xlim <- range(c(d_before$x, d_after$x))
+ylim <- range(c(d_before$y, d_after$y))
+
+plot(d_before, 
+     xlim = xlim, ylim = ylim,
+     col = "slategray", lwd = 2,
+     main = "Speed Distributions Before vs. After Legislative Changes",
+     xlab = "Speed (mph)", ylab = "Density")
+lines(d_after, col = "slategray2", lwd = 2)
+legend("topright", 
+       legend = c("Before", "After"),
+       col = c("slategray", "slategray2"), lwd = 2)
+
