@@ -4,7 +4,6 @@ df <- read.csv("/Users/thomasjones/workspace/UMKC/Spring2025/CS5590-0021/hw3/car
 head(df)
 
 library(dplyr)
-library(tidyr)
 
 #Get an idea about some basic feature stats
 feature_stats <- function(df, fname) {
@@ -26,4 +25,8 @@ feature_stats(df, "modelyr")
 feature_stats(df, "origin")
 feature_stats(df, "foreign")
 
+
+## Breakdown of foreign, i.e. how many North American origin cars are foreign?
+df_na_foreign <- df %>% filter((origin==1) & (foreign==1))
+head(df_na_foreign)
 
