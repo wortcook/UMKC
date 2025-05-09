@@ -1,6 +1,6 @@
 #LOAD THE DATA FROM LOCAL DIRECTORY
-df <- read.csv("/Users/thomasjones/workspace/UMKC/Spring2025/CS5590-0021/hw3/car.data.csv")
-#df <- read.csv("/Users/wortcook/Workspace/UMKC/Spring2025/CS5590-0021/hw3/car.data.csv")
+#df <- read.csv("/Users/thomasjones/workspace/UMKC/Spring2025/CS5590-0021/hw3/car.data.csv")
+df <- read.csv("/Users/wortcook/Workspace/UMKC/Spring2025/CS5590-0021/hw3/car.data.csv")
 
 head(df)
 
@@ -189,11 +189,10 @@ plot(model4$residuals ~ df_mod$mpg2)
 plot(df_mod$mpg ~ df_mod$displacement)
 plot(df_mod$mpg2 ~ df_mod$displacement2)
 
-test_mpg <- 7.604 - 0.2432*log(455) -0.5107*log(230) - 0.3514 * log(24.8) - 0.0364
+#sanity check
+test_mpg <- 7.604 - 0.2432 * log(191.5) - 0.5107 * log(103.5) - 0.3514 * log(15.6) - 0.0364 + 0.0181
 test_mpg
 exp(test_mpg)
 
-test_mpg <- 45.11 - 0.01 * 191 - 0.08 * 103 - 0.03 * 15.6 - 3
-test_mpg
 
 
