@@ -194,5 +194,37 @@ test_mpg <- 7.604 - 0.2432 * log(191.5) - 0.5107 * log(103.5) - 0.3514 * log(15.
 test_mpg
 exp(test_mpg)
 
+#6 Hypothesis test
+df.american = df[df$foreign==0,]
+df.foreign  = df[df$foreign==1,]
+
+df.american.n = length(df.american)
+df.foreign.n  = length(df.foreign)
+
+#This is our target
+df.american.mean_weight = mean(df.american$weight, na.rm = TRUE)
+df.american.mean_weight
+
+
+df.foreign.mean_weight  = mean(df.foreign$weight, na.rm = TRUE)
+df.foreign.mean_weight
+
+df.foreign.var_weight  = var(df.foreign$weight, na.rm = TRUE)
+df.foreign.var_weight
+
+chi_sq_stat <- (df.foreign.n - 1) * df.foreign.var_weight / df.american.mean_weight
+chi_sq_stat
+
+alpha <- 0.05
+chi_sq_critical <- qchisq(alpha, df = df.foreign.n - 1)
+chi_sq_critical
+
+sprintf("Critical value: %.2f", chi_sq_critical)
+
+if (chi_sq_stat < chi_sq_critical) {
+  sprintf("Failed to reject null hypothesis, American cars are heavier")
+} else {
+  sprintf("Null hypothesis rejected, no evidence that American cars are heavier")
+}
 
 
