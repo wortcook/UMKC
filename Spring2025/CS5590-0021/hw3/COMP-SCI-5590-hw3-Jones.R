@@ -1,6 +1,6 @@
 #LOAD THE DATA FROM LOCAL DIRECTORY
-#df <- read.csv("/Users/thomasjones/workspace/UMKC/Spring2025/CS5590-0021/hw3/car.data.csv")
-df <- read.csv("/Users/wortcook/Workspace/UMKC/Spring2025/CS5590-0021/hw3/car.data.csv")
+df <- read.csv("/Users/thomasjones/workspace/UMKC/Spring2025/CS5590-0021/hw3/car.data.csv")
+#df <- read.csv("/Users/wortcook/Workspace/UMKC/Spring2025/CS5590-0021/hw3/car.data.csv")
 
 head(df)
 
@@ -91,12 +91,6 @@ summary(model3)
 
 vif(model3)
 
-model3_H0 <- c("displacement2", "hp2", "acceleration2", "origin_na", "origin_eu", 
-               "modyr71", "modyr72", "modyr73", "modyr74", "modyr75", "modyr76",
-               "modyr77", "modyr78", "modyr79", "modyr80", "modyr81", "modyr82")
-linearHypothesis(model3, model3_H0)
-
-
 #residualPlots(model3)
 
 df_mod$mpg2 = log(df_mod$mpg)
@@ -110,11 +104,6 @@ model4 = lm(formula =
 summary(model4)
 
 vif(model4)
-
-model4_H0 <- c("displacement2", "hp2", "acceleration2", "origin_na", "origin_eu", 
-               "modyr71", "modyr72", "modyr73", "modyr74", "modyr75", "modyr76",
-               "modyr77", "modyr78", "modyr79", "modyr80", "modyr81", "modyr82")
-linearHypothesis(model4, model4_H0)
 
 #residualPlots(model4)
 
@@ -198,33 +187,36 @@ exp(test_mpg)
 df.american = df[df$foreign==0,]
 df.foreign  = df[df$foreign==1,]
 
-df.american.n = length(df.american)
-df.foreign.n  = length(df.foreign)
+result = t.test(df.american$weight, df.foreign$weight, conf.level = 0.90, alternative = "greater")
+result
 
-#This is our target
-df.american.mean_weight = mean(df.american$weight, na.rm = TRUE)
-df.american.mean_weight
+result = t.test(df.american$weight, df.foreign$weight, conf.level = 0.95, alternative = "greater")
+result
+
+result = t.test(df.american$weight, df.foreign$weight, conf.level = 0.99, alternative = "greater")
+result
+
+#7 Model year hypothesis
+model4_H0 <- c("modyr71", "modyr72", "modyr73", "modyr74", "modyr75", "modyr76",
+               "modyr77", "modyr78", "modyr79", "modyr80", "modyr81", "modyr82")
+linearHypothesis(model4, model4_H0)
+
+#8 Goodness of fit
+summary(model4)
+
+model5 = lm(formula = 
+              mpg2 ~ cylinders + log(cylinders) + weight + log(weight) + 
+              displacement2 + displacement + hp2 + hp + acceleration2 + 
+              acceleration + origin_na + origin_eu +
+              modyr71 + modyr72 + modyr73+ modyr74 + modyr75 +
+              modyr76 + modyr77 + modyr78 + modyr79 + modyr80 +
+              modyr81 + modyr82 ,data = df_mod)
+
+summary(model5)
 
 
-df.foreign.mean_weight  = mean(df.foreign$weight, na.rm = TRUE)
-df.foreign.mean_weight
 
-df.foreign.var_weight  = var(df.foreign$weight, na.rm = TRUE)
-df.foreign.var_weight
 
-chi_sq_stat <- (df.foreign.n - 1) * df.foreign.var_weight / df.american.mean_weight
-chi_sq_stat
 
-alpha <- 0.05
-chi_sq_critical <- qchisq(alpha, df = df.foreign.n - 1)
-chi_sq_critical
-
-sprintf("Critical value: %.2f", chi_sq_critical)
-
-if (chi_sq_stat < chi_sq_critical) {
-  sprintf("Failed to reject null hypothesis, American cars are heavier")
-} else {
-  sprintf("Null hypothesis rejected, no evidence that American cars are heavier")
-}
 
 
