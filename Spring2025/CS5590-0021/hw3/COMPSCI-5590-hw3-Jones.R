@@ -1,3 +1,6 @@
+#CS5590-0025 Homework 3                                      Thomas Jones
+#Date: May 10, 2025                                              08206472
+
 #LOAD THE DATA FROM LOCAL DIRECTORY
 df <- read.csv("/Users/thomasjones/workspace/UMKC/Spring2025/CS5590-0021/hw3/car.data.csv")
 #df <- read.csv("/Users/wortcook/Workspace/UMKC/Spring2025/CS5590-0021/hw3/car.data.csv")
