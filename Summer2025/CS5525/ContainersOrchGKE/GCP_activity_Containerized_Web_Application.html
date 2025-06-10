@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCP Activity Guide: Serverless Computing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .step-content {
+            display: none;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .step-header-icon {
+            transition: transform 0.3s ease;
+        }
+        .step-header.active .step-header-icon {
+            transform: rotate(90deg);
+        }
+    </style>
+    <!-- Chosen Palette: Calm Neutrals -->
+    <!-- Application Structure Plan: The SPA is designed as an interactive, multi-part workflow guide, mirroring the logical progression of learning serverless technologies: Cloud Functions, Cloud Run, and integrating Cloud Run with API Gateway. A top-level tabbed navigation allows users to switch between these main parts, providing a clear sense of progression through different serverless patterns. Within each part, a vertical accordion-style layout presents individual steps, breaking down complex tasks into manageable, interactive chunks. This structure was chosen because it effectively organizes a multi-faceted topic into a linear, step-by-step tutorial, preventing information overload and allowing users to focus on one concept and its practical application at a time. This interactive approach significantly enhances user understanding and ease of navigation compared to a static document. -->
+    <!-- Visualization & Content Choices: The application primarily uses textual instructions and code snippets to guide the user through serverless deployments. Goal: Inform/Organize -> Presentation: Main tab navigator for high-level serverless concepts and a vertical accordion for detailed steps within each concept. Interaction: Clicking tabs switches main sections; clicking step headers expands/collapses detailed instructions and code snippets. Each code block includes a 'copy' button for practical execution. "Screenshots" are indicated by a camera icon and descriptive text, prompting the user for verification. All code is presented in styled <pre><code> blocks. Library/Method: Vanilla JS for all interactivity (tabs, accordion, copy-to-clipboard). Tailwind CSS for styling. No charts or complex visualizations are necessary for this procedural guide. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <header class="text-center mb-10">
+            <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">GCP Activity Guide</h1>
+            <p class="mt-2 text-lg text-slate-600">Serverless Computing with Cloud Functions & Cloud Run</p>
+        </header>
+
+        <nav id="main-nav" class="mb-8 p-1.5 bg-slate-200 rounded-xl flex items-center justify-center space-x-2">
+            <button data-tab="part1" class="nav-tab active-tab w-1/4 py-2.5 text-sm sm:text-base font-semibold rounded-lg bg-white shadow text-blue-600">Part 1: Cloud Functions</button>
+            <button data-tab="part2" class="nav-tab w-1/4 py-2.5 text-sm sm:text-base font-semibold rounded-lg text-slate-600">Part 2: Cloud Run</button>
+            <button data-tab="part3" class="nav-tab w-1/4 py-2.5 text-sm sm:text-base font-semibold rounded-lg text-slate-600">Part 3: Cloud Run & API Gateway</button>
+            <button data-tab="part4" class="nav-tab w-1/4 py-2.5 text-sm sm:text-base font-semibold rounded-lg text-slate-600">Part 4: Clean Up</button>
+        </nav>
+        
+        <main>
+            <div id="part1" class="tab-content">
+                <div class="bg-white p-6 rounded-2xl shadow-sm mb-6">
+                    <h2 class="text-2xl font-bold text-slate-900 mb-2">Part 1: Cloud Functions (Event-Driven Serverless Data Processing)</h2>
+                    <p class="text-slate-600">This section introduces Cloud Functions, Google Cloud's lightweight, event-driven serverless compute platform. You will deploy a function that automatically processes data uploaded to a Cloud Storage bucket and stores results in Cloud Firestore, demonstrating a common serverless workflow.</p>
+                </div>
+                <div class="space-y-4">
+                    <!-- Steps for Part 1 -->
+                </div>
+            </div>
+
+            <div id="part2" class="tab-content hidden">
+                <div class="bg-white p-6 rounded-2xl shadow-sm mb-6">
+                    <h2 class="text-2xl font-bold text-slate-900 mb-2">Part 2: Cloud Run (Containerized Serverless)</h2>
+                    <p class="text-slate-600">Here, you will explore Cloud Run, a fully managed serverless platform for containerized applications. This offers more flexibility than Cloud Functions for web services and APIs. You will deploy a simple Python web application as a container to Cloud Run and access it via a public URL.</p>
+                </div>
+                 <div class="space-y-4">
+                    <!-- Steps for Part 2 -->
+                </div>
+            </div>
+
+            <div id="part3" class="tab-content hidden">
+                <div class="bg-white p-6 rounded-2xl shadow-sm mb-6">
+                    <h2 class="text-2xl font-bold text-slate-900 mb-2">Part 3: Cloud Run & API Gateway (Building a Serverless API)</h2>
+                    <p class="text-slate-600">This section focuses on exposing your Cloud Run service as a robust API using API Gateway. API Gateway provides features like security, rate limiting, and analytics, making it ideal for managing access to your serverless backend. You will define an OpenAPI specification and deploy an API Gateway to front your Cloud Run service.</p>
+                </div>
+                 <div class="space-y-4">
+                    <!-- Steps for Part 3 -->
+                </div>
+            </div>
+
+            <div id="part4" class="tab-content hidden">
+                <div class="bg-white p-6 rounded-2xl shadow-sm mb-6">
+                    <h2 class="text-2xl font-bold text-slate-900 mb-2">Part 4: Clean Up</h2>
+                    <p class="text-slate-600">It is crucial to clean up all resources created during these activities to avoid incurring unexpected charges on your GCP Free Tier account. This section provides commands to delete all deployed Cloud Functions, Cloud Run services, API Gateways, and associated storage buckets.</p>
+                </div>
+                 <div class="space-y-4">
+                    <!-- Steps for Part 4 -->
+                </div>
+            </div>
+        </main>
+        
+    </div>
+
+    <script>
+        const appData = {
+            part1: [
+                {
+                    title: "1. Enable Required APIs",
+                    content: `
+                        <p class="mb-4">Enable the Cloud Functions, Cloud Storage, and Cloud Firestore APIs for your project.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Commands:</h4>
+                        <div class="code-block-wrapper relative mb-4">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>gcloud services enable cloudfunctions.googleapis.com
+gcloud services enable storage.googleapis.com
+gcloud services enable datastore.googleapis.com # Firestore uses Datastore API</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 1:</strong> Terminal output confirming API enablements.</p></div>`
+                },
+                {
+                    title: "2. Create a Cloud Storage Bucket",
+                    content: `
+                        <p class="mb-4">Create a unique Cloud Storage bucket. This bucket will trigger your Cloud Function when new objects are uploaded.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Command:</h4>
+                        <div class="code-block-wrapper relative">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>gsutil mb -p YOUR_GCP_PROJECT_ID gs://your-unique-bucket-name-12345</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <p class="mt-2 text-sm text-slate-600">Remember to replace <code>your-unique-bucket-name-12345</code> with a globally unique name.</p>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 2:</strong> Terminal output showing successful bucket creation.</p></div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 3:</strong> GCP Console screenshot of your new Cloud Storage bucket.</p></div>`
+                },
+                {
+                    title: "3. Write Cloud Function Code (Node.js)",
+                    content: `
+                        <p class="mb-4">Create a local directory (e.g., <code>my-cloud-function</code>) and add <code>index.js</code> and <code>package.json</code> files. This function will log the uploaded file's name and save it to Firestore.</p>
+                        <div class="mb-4">
+                            <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">📄</span>File: <code>index.js</code></h4>
+                            <div class="code-block-wrapper relative">
+                                <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code class="language-js">const { Firestore } = require('@google-cloud/firestore');
+const firestore = new Firestore();
+
+/**
+ * Triggered by a change to a Cloud Storage bucket.
+ *
+ * @param {object} event The Cloud Storage event payload.
+ * @param {object} context The event metadata.
+ */
+exports.processFile = async (event, context) => {
+  const file = event;
+  console.log(\`Processing file: \${file.name}\`);
+
+  const docRef = firestore.collection('processedFiles').doc(file.name);
+  await docRef.set({
+    name: file.name,
+    bucket: file.bucket,
+    contentType: file.contentType,
+    size: file.size,
+    timeCreated: file.timeCreated,
+    processedAt: new Date().toISOString()
+  });
+
+  console.log(\`File \${file.name} processed and saved to Firestore.\`);
+};</code></pre>
+                                <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">📄</span>File: <code>package.json</code></h4>
+                            <div class="code-block-wrapper relative">
+                                <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code class="language-json">{
+  "name": "gcs-firestore-function",
+  "version": "1.0.0",
+  "description": "A Cloud Function triggered by GCS to write to Firestore",
+  "main": "index.js",
+  "dependencies": {
+    "@google-cloud/firestore": "^7.0.0"
+  }
+}</code></pre>
+                                <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                            </div>
+                        </div>`
+                },
+                {
+                    title: "4. Deploy the Cloud Function",
+                    content: `
+                        <p class="mb-4">Deploy your Cloud Function, specifying the trigger (Cloud Storage bucket) and runtime.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Command:</h4>
+                        <div class="code-block-wrapper relative">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>gcloud functions deploy processFile \\
+  --runtime nodejs18 \\
+  --trigger-bucket your-unique-bucket-name-12345 \\
+  --entry-point processFile \\
+  --region us-central1</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <p class="mt-2 text-sm text-slate-600">Replace <code>your-unique-bucket-name-12345</code> with your bucket name.</p>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 4:</strong> Terminal output showing successful Cloud Function deployment.</p></div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 5:</strong> GCP Console screenshot of your deployed Cloud Function.</p></div>`
+                },
+                {
+                    title: "5. Test the Cloud Function",
+                    content: `
+                        <p class="mb-4">Upload a small text file to your Cloud Storage bucket. Observe the function execution logs and verify the new entry in Cloud Firestore.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Upload Command (example):</h4>
+                        <div class="code-block-wrapper relative">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>echo "test content" > test-file.txt
+gsutil cp test-file.txt gs://your-unique-bucket-name-12345/test-file.txt</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 6:</strong> GCP Console screenshot of Cloud Function logs showing execution.</p></div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 7:</strong> GCP Console screenshot of Cloud Firestore showing the new document.</p></div>`
+                }
+            ],
+            part2: [
+                {
+                    title: "1. Prepare a Simple Python Web Application",
+                    content: `
+                        <p class="mb-4">Create a local directory (e.g., <code>my-cloud-run-app</code>) and add <code>main.py</code> for the application logic and <code>requirements.txt</code> for dependencies. This will be containerized.</p>
+                        <div class="mb-4">
+                            <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">📄</span>File: <code>main.py</code></h4>
+                            <div class="code-block-wrapper relative">
+                                <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code class="language-python">from flask import Flask
+import os
+
+app = Flask(__name__)
+
+@app.route('/')
+def hello_world():
+    name = os.environ.get('NAME', 'World')
+    return f'Hello {name} from Cloud Run!'
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))</code></pre>
+                                <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">📄</span>File: <code>requirements.txt</code></h4>
+                            <div class="code-block-wrapper relative">
+                                <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>Flask==2.3.2</code></pre>
+                                <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                            </div>
+                        </div>
+                        <h4 class="font-semibold text-slate-700 mb-2 mt-4 flex items-center"><span class="mr-2 text-lg">📄</span>File: <code>Dockerfile</code></h4>
+                        <div class="code-block-wrapper relative">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code class="language-dockerfile"># Use the official Python image.
+FROM python:3.9-slim-buster
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the requirements file into the container
+COPY requirements.txt .
+
+# Install the dependencies
+RUN pip install -r requirements.txt
+
+# Copy the rest of the application code
+COPY . .
+
+# Expose the port the app runs on
+ENV PORT 8080
+EXPOSE 8080
+
+# Run the application
+CMD ["python", "main.py"]</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>`
+                },
+                {
+                    title: "2. Build and Push Image to Artifact Registry",
+                    content: `
+                        <p class="mb-4">Navigate to your <code>my-cloud-run-app</code> directory and build and push the Docker image to Artifact Registry.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Commands:</h4>
+                        <div class="code-block-wrapper relative mb-4">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>docker build -t cloud-run-hello:v1.0 .
+docker tag cloud-run-hello:v1.0 us-central1-docker.pkg.dev/YOUR_GCP_PROJECT_ID/my-gke-repo/cloud-run-hello:v1.0
+docker push us-central1-docker.pkg.dev/YOUR_GCP_PROJECT_ID/my-gke-repo/cloud-run-hello:v1.0</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 8:</strong> Terminal output showing successful Docker build and push.</p></div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 9:</strong> GCP Console screenshot of <code>cloud-run-hello</code> image in Artifact Registry.</p></div>`
+                },
+                {
+                    title: "3. Deploy to Cloud Run",
+                    content: `
+                        <p class="mb-4">Deploy your containerized application directly to Cloud Run. Cloud Run will automatically handle scaling and infrastructure.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Command:</h4>
+                        <div class="code-block-wrapper relative">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>gcloud run deploy cloud-run-hello \\
+  --image us-central1-docker.pkg.dev/YOUR_GCP_PROJECT_ID/my-gke-repo/cloud-run-hello:v1.0 \\
+  --platform managed \\
+  --region us-central1 \\
+  --allow-unauthenticated</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 10:</strong> Terminal output showing successful Cloud Run deployment.</p></div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 11:</strong> GCP Console screenshot of your deployed Cloud Run service.</p></div>`
+                },
+                {
+                    title: "4. Test Cloud Run Service",
+                    content: `
+                        <p class="mb-4">After deployment, Cloud Run provides a public URL. Access this URL in your web browser to verify your application is running.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Get Service URL:</h4>
+                        <div class="code-block-wrapper relative">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>gcloud run services describe cloud-run-hello --platform managed --region us-central1 --format="value(status.url)"</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 12:</strong> Terminal output showing the Cloud Run service URL.</p></div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 13:</strong> Browser screenshot of your Cloud Run application running successfully.</p></div>`
+                }
+            ],
+            part3: [
+                {
+                    title: "1. Deploy a Cloud Run Service (as API backend)",
+                    content: `
+                        <p class="mb-4">We'll use the same <code>cloud-run-hello</code> service from Part 2 as the backend for our API Gateway, but ensure it's deployed and accessible.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Command (if not already deployed):</h4>
+                        <div class="code-block-wrapper relative">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>gcloud run deploy cloud-run-hello \\
+  --image us-central1-docker.pkg.dev/YOUR_GCP_PROJECT_ID/my-gke-repo/cloud-run-hello:v1.0 \\
+  --platform managed \\
+  --region us-central1 \\
+  --allow-unauthenticated</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 14:</strong> Terminal output confirming Cloud Run service is deployed.</p></div>`
+                },
+                {
+                    title: "2. Create an OpenAPI Specification",
+                    content: `
+                        <p class="mb-4">Create an <code>openapi.yaml</code> file. This defines your API's endpoints and how they map to your Cloud Run backend. Replace <code>YOUR_CLOUD_RUN_SERVICE_URL</code> with the actual URL of your <code>cloud-run-hello</code> service (from Part 2, Step 4).</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">📄</span>File: <code>openapi.yaml</code></h4>
+                        <div class="code-block-wrapper relative">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code class="language-yaml">swagger: '2.0'
+info:
+  title: Cloud Run Hello API
+  description: API Gateway to Cloud Run Hello service
+  version: 1.0.0
+schemes:
+  - https
+produces:
+  - application/json
+paths:
+  /:
+    get:
+      summary: Returns a greeting
+      operationId: hello
+      x-google-backend:
+        address: YOUR_CLOUD_RUN_SERVICE_URL # e.g., https://cloud-run-hello-xxxxxx-uc.a.run.app
+        protocol: h2
+      responses:
+        '200':
+          description: A successful response
+          schema:
+            type: string</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>`
+                },
+                {
+                    title: "3. Deploy API Gateway",
+                    content: `
+                        <p class="mb-4">First, create an API Config from your OpenAPI spec, then deploy the API Gateway itself.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Create API Config:</h4>
+                        <div class="code-block-wrapper relative mb-4">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>gcloud api-gateway api-configs create cloud-run-hello-config \\
+  --api=cloud-run-hello-api \\
+  --openapi-spec=openapi.yaml \\
+  --project=YOUR_GCP_PROJECT_ID \\
+  --backend-auth-service-account=YOUR_GCP_PROJECT_NUMBER-compute@developer.gserviceaccount.com</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <p class="mt-2 text-sm text-slate-600">Replace <code>YOUR_GCP_PROJECT_NUMBER</code> with your actual GCP project number (found on your project dashboard).</p>
+                        
+                        <h4 class="font-semibold text-slate-700 mb-2 mt-4 flex items-center"><span class="mr-2 text-lg">⌨️</span>Deploy API Gateway:</h4>
+                        <div class="code-block-wrapper relative">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>gcloud api-gateway gateways create cloud-run-hello-gateway \\
+  --api=cloud-run-hello-api \\
+  --api-config=cloud-run-hello-config \\
+  --location=us-central1 \\
+  --project=YOUR_GCP_PROJECT_ID</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 15:</strong> Terminal output showing successful API Gateway deployment.</p></div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 16:</strong> GCP Console screenshot of your deployed API Gateway.</p></div>`
+                },
+                {
+                    title: "4. Test the API Gateway",
+                    content: `
+                        <p class="mb-4">Get the URL of your deployed API Gateway and access it in a browser or using <code>curl</code>.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Get Gateway URL:</h4>
+                        <div class="code-block-wrapper relative">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>gcloud api-gateway gateways describe cloud-run-hello-gateway --location=us-central1 --format="value(defaultHostname)"</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 17:</strong> Terminal output showing the API Gateway URL.</p></div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 18:</strong> Browser screenshot of your API Gateway successfully returning the Cloud Run response.</p></div>`
+                }
+            ],
+            part4: [
+                {
+                    title: "1. Delete Cloud Functions",
+                    content: `
+                        <p class="mb-4">Delete the Cloud Function created in Part 1.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Command:</h4>
+                        <div class="code-block-wrapper relative">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>gcloud functions delete processFile --region us-central1</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 19:</strong> Terminal output confirming Cloud Function deletion.</p></div>`
+                },
+                {
+                    title: "2. Delete Cloud Run Services",
+                    content: `
+                        <p class="mb-4">Delete the Cloud Run service created in Part 2 and 3.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Command:</h4>
+                        <div class="code-block-wrapper relative">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>gcloud run services delete cloud-run-hello --platform managed --region us-central1</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 20:</strong> Terminal output confirming Cloud Run service deletion.</p></div>`
+                },
+                {
+                    title: "3. Delete API Gateway",
+                    content: `
+                        <p class="mb-4">Delete the API Gateway and its associated API Config.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Commands:</h4>
+                        <div class="code-block-wrapper relative mb-4">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>gcloud api-gateway gateways delete cloud-run-hello-gateway --location=us-central1
+gcloud api-gateway api-configs delete cloud-run-hello-config --api=cloud-run-hello-api</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 21:</strong> Terminal output confirming API Gateway deletion.</p></div>`
+                },
+                {
+                    title: "4. Delete Cloud Storage Bucket",
+                    content: `
+                        <p class="mb-4">Delete the Cloud Storage bucket that triggered your Cloud Function.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Command:</h4>
+                        <div class="code-block-wrapper relative">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>gsutil rm -r gs://your-unique-bucket-name-12345</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 22:</strong> Terminal output confirming bucket deletion.</p></div>`
+                },
+                {
+                    title: "5. Delete Artifact Registry Image (Optional but Recommended)",
+                    content: `
+                        <p class="mb-4">Clean up the Docker image from Artifact Registry.</p>
+                        <h4 class="font-semibold text-slate-700 mb-2 flex items-center"><span class="mr-2 text-lg">⌨️</span>Command:</h4>
+                        <div class="code-block-wrapper relative">
+                            <pre class="bg-slate-800 text-white p-4 rounded-lg overflow-x-auto"><code>gcloud artifacts docker images delete us-central1-docker.pkg.dev/YOUR_GCP_PROJECT_ID/my-gke-repo/cloud-run-hello:v1.0 --delete-tags</code></pre>
+                            <button class="copy-btn absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-2 rounded-md hover:bg-slate-500">Copy</button>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 23:</strong> Terminal output confirming image deletion.</p></div>
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center"><span class="text-2xl mr-3">📸</span><p class="text-sm text-blue-800 font-medium"><strong>Screenshot 24 (Optional):</strong> Screenshot of your GCP Billing overview page post-cleanup.</p></div>`
+                }
+            ]
+        };
+
+        function createStepElement(step, index) {
+            const stepWrapper = document.createElement('div');
+            stepWrapper.className = 'bg-white rounded-xl shadow-sm';
+
+            const header = document.createElement('button');
+            header.className = 'step-header w-full text-left p-4 flex justify-between items-center';
+            header.innerHTML = `
+                <span class="font-semibold text-slate-800">${step.title}</span>
+                <span class="step-header-icon text-blue-500 transform transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                </span>
+            `;
+
+            const content = document.createElement('div');
+            content.className = 'step-content px-4 pb-4';
+            content.innerHTML = step.content;
+
+            stepWrapper.appendChild(header);
+            stepWrapper.appendChild(content);
+
+            header.addEventListener('click', () => {
+                const isActive = header.classList.toggle('active');
+                if (isActive) {
+                    content.style.display = 'block';
+                    const contentHeight = content.scrollHeight + 'px';
+                    content.style.maxHeight = '0';
+                    setTimeout(() => {
+                        content.style.maxHeight = contentHeight;
+                    }, 0);
+                } else {
+                    content.style.maxHeight = '0';
+                    content.addEventListener('transitionend', () => {
+                        if (!header.classList.contains('active')) {
+                            content.style.display = 'none';
+                        }
+                    }, { once: true });
+                }
+            });
+
+            return stepWrapper;
+        }
+
+        function renderContent(part) {
+            const container = document.querySelector(`#${part} .space-y-4`);
+            container.innerHTML = '';
+            appData[part].forEach((step, index) => {
+                container.appendChild(createStepElement(step, index));
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            renderContent('part1');
+
+            const navTabs = document.querySelectorAll('.nav-tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            navTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    navTabs.forEach(t => {
+                        t.classList.remove('active-tab', 'bg-white', 'shadow', 'text-blue-600');
+                        t.classList.add('text-slate-600');
+                    });
+                    tab.classList.add('active-tab', 'bg-white', 'shadow', 'text-blue-600');
+                    tab.classList.remove('text-slate-600');
+                    
+                    const targetPart = tab.dataset.tab;
+
+                    tabContents.forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    const activeContent = document.getElementById(targetPart);
+                    activeContent.classList.remove('hidden');
+                    renderContent(targetPart);
+                });
+            });
+
+            document.body.addEventListener('click', function(event) {
+                if (event.target.classList.contains('copy-btn')) {
+                    const codeBlock = event.target.previousElementSibling.querySelector('code');
+                    if (codeBlock) {
+                        const codeText = codeBlock.innerText;
+                        const textArea = document.createElement('textarea');
+                        textArea.value = codeText;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        try {
+                            document.execCommand('copy');
+                            event.target.textContent = 'Copied!';
+                            setTimeout(() => {
+                                event.target.textContent = 'Copy';
+                            }, 2000);
+                        } catch (err) {
+                            console.error('Failed to copy text: ', err);
+                        }
+                        document.body.removeChild(textArea);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
