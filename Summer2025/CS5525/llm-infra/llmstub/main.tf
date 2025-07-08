@@ -7,17 +7,23 @@ terraform {
   }
 }
 
+variable "project_id" {
+  description = "The GCP project ID."
+  type        = string
+}
+
 resource "docker_image" "llm-stub" {
-  name = "us-central1-docker.pkg.dev/thomasjones-llm-project-2025/llm-project/llm-stub:latest"
+  name = "us-central1-docker.pkg.dev/${var.project_id}/llm-project/llm-stub:latest"
   build {
-    context = "./llmstub"
+    context = path.module
     tag = ["llm-stub:latest"]
+    platform = "linux/amd64"
   }
   triggers = {
-    dir_sha1 = sha1(join("", [for f in fileset(path.module, "./llm-stub/src/**") : filesha1(f)]))
+    dir_sha1 = sha1(join("", [for f in fileset(path.module, "**/*") : filesha1("${path.module}/${f}")]))
   }
   force_remove = true
-  keep_locally = false
+  keep_locally = true # Must be true to allow tagging via local-exec
 }
 
 resource "null_resource" "tag_image" {
@@ -34,3 +40,12 @@ resource "null_resource" "push_image" {
   }
 }
 
+output "image_name" {
+  description = "The full name of the docker image."
+  value       = docker_image.llm-stub.name
+}
+
+output "image_id" {
+  description = "The ID of the docker image."
+  value       = docker_image.llm-stub.id
+}

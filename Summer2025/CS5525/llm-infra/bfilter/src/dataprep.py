@@ -6,10 +6,20 @@ from sklearn.feature_extraction.text import CountVectorizer
 # from sklearn.feature_extraction.text import HashingVectorizer
 # from sklearn.feature_extraction.text import TfidfVectorizer
 
-
 import joblib
 import hashlib
 import datetime
+import os
+
+
+#STARTUP CHECK, HAVE THE ENVIRONMENT VARIABLES BEEN SET
+LLMSTUB_URL = os.getenv("LLMSTUB_URL")
+if not LLMSTUB_URL:
+    raise ValueError("LLMSTUB_URL environment variable is not set.")
+
+# SECONDARYSTUB_URL = os.getenv("SECONDARYSTUB_URL")
+# if not SECONDARYSTUB_URL:
+#     raise ValueError("SECONDARYSTUB_URL environment variable is not set.")
 
 def process_text(text: str) -> list[str]:
     #Break into words
@@ -59,7 +69,7 @@ reversedText = []
 for i in range(len(dataset["text"])):
     #Get the text
     textProcessed = process_text(dataset["text"][i])
-    dataset["text"][i] = textProcessed[0]
+    dataset.loc[i, "text"] = textProcessed[0]
     reversedText.append(textProcessed[1])
     
 #Add the reversed text to the dataset
@@ -94,5 +104,3 @@ thishash = hashlib.md5(open(__file__,"rb").read()).hexdigest()
 deployHash = hashlib.md5((modelHash + sourceHash + thishash + timehash).encode("utf-8")).hexdigest()
 
 joblib.dump(deployHash, "deployHash.txt")
-
-

@@ -1,64 +1,151 @@
-import os
-
 import joblib
-import logging
-import json
-import base64
-import datetime
-import hashlib
+from flask import Flask, request, render_template_string
+import os
+import requests
+from google.auth.transport import requests as auth_requests
+from google.oauth2 import id_token as google_id_token
 
-from flask import Flask
+LLMSTUB_URL = os.getenv("LLMSTUB_URL")
+SFILTER_URL = os.getenv("SFILTER_URL")
 
-app = Flask(__name__)
+#MODEL LOAD FOR BAYESIAN FILTER
 clf = joblib.load("model.pkl")
 cv = joblib.load("cv.pkl")
-deployHash = joblib.load("deployHash.txt")
+
+app = Flask(__name__)
+
+# The deployHash is loaded but not used in this file.
+# It can be uncommented if needed for logging or headers.
+# deployHash = joblib.load("deployHash.txt")
+
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Message Filter</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; background-color: #f4f4f9; color: #333; }
+        h1, h2 { color: #444; }
+        form { background: white; padding: 2em; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        textarea { width: 100%; min-height: 100px; margin-bottom: 1em; border: 1px solid #ccc; border-radius: 4px; padding: 0.5em; box-sizing: border-box; }
+        input[type="submit"] { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; }
+        input[type="submit"]:hover { background-color: #0056b3; }
+        #response { background-color: #e9ecef; }
+    </style>
+</head>
+<body>
+    <h1>Enter a message to classify</h1>
+    <form id="messageForm">
+        <label for="message">Message:</label><br>
+        <textarea id="message" name="message" rows="5" cols="50" required></textarea><br>
+        <input type="submit" value="Submit">
+    </form>
+
+    <h2>Response:</h2>
+    <textarea id="response" name="response" rows="5" cols="50" readonly></textarea>
+
+    <script>
+        document.getElementById('messageForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            const message = document.getElementById('message').value;
+            const responseArea = document.getElementById('response');
+
+            responseArea.value = 'Processing...'; // Show a processing message
+
+            fetch('/handle', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'message=' + encodeURIComponent(message)
+            })
+            .then(response => response.text())
+            .then(data => {
+                responseArea.value = data;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                responseArea.value = 'Error processing your request.';
+            });
+        });
+    </script>
+</body>
+</html>
+"""
 
 def process_text(text: str) -> str:
-    #Break into words
+    """
+    Creates a new version of text processing, per the request.
+    This version filters out short words and corrects the iteration bug
+    from the original script. It does not include the text reversal logic.
+    """
     words = text.split(" ")
-    for word in words:
-        #Remove words that are less than 3 characters
-        if len(word) == 1:
-            words.remove(word)
-        else:
-            #Remove all vowels
-            word = word.replace("aeiou", "")
-            #Remove all numbers
-            word = word.replace("0123456789", "")
-        
-    #Rejoin the words
-    text = " ".join(words)
-    #Save the text
-    return text
+    processed_words = [word for word in words if len(word) > 1]
+    return " ".join(processed_words)
 
-@app.route("/", methods=["POST"])
+def make_authenticated_post_request(url: str, data: dict) -> requests.Response:
+    """
+    Makes an authenticated POST request to a Google Cloud Run service.
+
+    This function fetches a Google-signed ID token for the target audience (URL)
+    and includes it in the Authorization header of the POST request. It will
+    raise an HTTPError for 4xx or 5xx responses.
+
+    Args:
+        url: The URL of the Cloud Run service to call.
+        data: The dictionary of data to send in the POST request body.
+
+    Returns:
+        The requests.Response object from the call.
+    """
+    auth_req = auth_requests.Request()
+    identity_token = google_id_token.fetch_id_token(auth_req, url)
+    headers = {"Authorization": f"Bearer {identity_token}"}
+    response = requests.post(url, data=data, headers=headers)
+    response.raise_for_status()
+    return response
+
+@app.route("/")
+def index():
+    """Serves the HTML form."""
+    return render_template_string(HTML_TEMPLATE)
+
+@app.route("/handle", methods=["POST"])
 def main():
-    userMessage = request.form.get('message')
-    #truncate the message to 3000 characters
-    userMessage = userMessage[:3000].lower()
+    userMessage = request.form.get('message', '')
+    testMessage = userMessage.lower().replace("aeiou0123456789", "")
 
-    # default score is 1        
-    score = 1
-        
-    userMessage = process_text(userMessage)
-        
-    # if the message is not empty, score it
-    # otherwise the score is always 1
-    if len(userMessage) > 0:
-        v = cv.transform([userMessage]).toarray()
+    score = 0.0
 
-        # score the message as the probability of a positive (spam) message
-        score =clf.predict_proba(v)[0][1]
+    if userMessage.strip():
+        processed_message = process_text(testMessage)
+        if processed_message:
+            v = cv.transform([processed_message]).toarray()
+            score = clf.predict_proba(v)[0][1]
+
+    if score < 0.9:
+        # If the score is low, proceed to the secondary filter (sfilter).
+        try:
+            make_authenticated_post_request(SFILTER_URL, data={"message": userMessage})
+        except requests.exceptions.HTTPError as e:
+            # sfilter returns a 401 on jailbreak detection.
+            if e.response and e.response.status_code == 401:
+                app.logger.info("sfilter service detected a jailbreak.")
+                return "I don't understand your message, can you say it another way? (secondary)"
+            else:
+                app.logger.error(f"HTTP error during sfilter check for URL {SFILTER_URL}: {e}")
+                return "Error communicating with the secondary filter.", 503
+
+        # If sfilter passes (returns 200 OK), call the final LLM stub.
+        try:
+            llmstub_response = make_authenticated_post_request(LLMSTUB_URL, data={"message": userMessage})
+            return llmstub_response.text
+        except requests.exceptions.RequestException as e:
+            app.logger.error(f"Error calling llmstub service at {LLMSTUB_URL}: {e}")
+            return "Error communicating with the primary service.", 503
     else:
-        score = 1
-    
-    if score > 0.9: #treat as spam
         return "I don't understand your message, can you say it another way?"
-    elif score > 0.3: #treat as neutral
-        return "Placeholder call secondary"
-    else:
-        return "Placeholder call LLM"
 
 if __name__ == "__main__":
     app.run(debug=True, port=8082, host='0.0.0.0')

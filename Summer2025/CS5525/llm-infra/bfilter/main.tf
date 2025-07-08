@@ -17,7 +17,7 @@ resource "docker_image" "bfilter" {
     dir_sha1 = sha1(join("", [for f in fileset(path.module, "./bfilter/src/**") : filesha1(f)]))
   }
   force_remove = true
-  keep_locally = false
+  keep_locally = true
 }
 
 resource "null_resource" "tag_image" {
@@ -34,3 +34,7 @@ resource "null_resource" "push_image" {
   }
 }
 
+output "image_name" {
+  description = "The full name of the docker image."
+  value       = docker_image.bfilter.name
+}
