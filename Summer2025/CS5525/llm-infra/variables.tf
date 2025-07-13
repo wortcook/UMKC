@@ -3,6 +3,16 @@ variable "project" {
   default     = "thomasjones-llm-project-2025"
 }
 
+variable "region" {
+  description = "The GCP region for resources."
+  default     = "us-central1"
+}
+
+variable "zone" {
+  description = "The GCP zone for resources."
+  default     = "us-central1-c"
+}
+
 variable "secondary_model_name" {
   description = "The HuggingFace model name for the secondary classifier."
   type        = string

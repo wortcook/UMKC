@@ -1,9 +1,12 @@
+import json
+
 import joblib
 from flask import Flask, request, render_template_string
 import os
 import requests
 from google.auth.transport import requests as auth_requests
 from google.oauth2 import id_token as google_id_token
+from google.cloud import pubsub_v1
 
 LLMSTUB_URL = os.getenv("LLMSTUB_URL")
 SFILTER_URL = os.getenv("SFILTER_URL")
@@ -130,12 +133,37 @@ def main():
             make_authenticated_post_request(SFILTER_URL, data={"message": userMessage})
         except requests.exceptions.HTTPError as e:
             # sfilter returns a 401 on jailbreak detection.
-            if e.response and e.response.status_code == 401:
+            if e.response.status_code == 401:
+
+                #fire pub-sub event to "secondary-filter"
+                try:
+                    #Pub/Sub
+                    # The ID of your Google Cloud project
+                    project_id = os.getenv("PROJECT_ID")
+                    # The ID of your Pub/Sub topic
+                    topic_id = "secondary-filter"
+
+                    publisher = pubsub_v1.PublisherClient()
+                    # The `topic_path` method creates a fully qualified identifier
+                    # in the form `projects/{project_id}/topics/{topic_id}`
+                    topic_path = publisher.topic_path(project_id, topic_id)
+
+                    # Data must be a byte string
+                    data = json.dumps({"message": userMessage}).encode("utf-8")
+                    # When you publish a message, the client returns a future.
+                    future = publisher.publish(topic_path, data)
+                    message_id = future.result()
+                    app.logger.info(f"Published message to {topic_path}: {message_id}")
+                except Exception as e:
+                    app.logger.error("Error publishing event")
+                    return f"Error publishing event {e}", 503
+
+
                 app.logger.info("sfilter service detected a jailbreak.")
                 return "I don't understand your message, can you say it another way? (secondary)"
             else:
                 app.logger.error(f"HTTP error during sfilter check for URL {SFILTER_URL}: {e}")
-                return "Error communicating with the secondary filter.", 503
+                return f"Error communicating with the secondary filter. {response.status_code}", 503
 
         # If sfilter passes (returns 200 OK), call the final LLM stub.
         try:

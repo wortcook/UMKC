@@ -7,3 +7,4 @@ gunicorn
 requests
 google-auth
 joblib
+google-cloud-pubsub
