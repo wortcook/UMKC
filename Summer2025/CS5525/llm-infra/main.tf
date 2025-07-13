@@ -320,47 +320,74 @@ resource "google_cloud_run_v2_service" "llm-stub-service" {
 resource "google_cloud_run_v2_service" "sfilter-service" {
   name     = "sfilter-service"
   location = var.region
+  project  = var.project
   deletion_protection = false
 
-  ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
-
   template {
-    service_account = google_service_account.sfilter_sa.email
     scaling {
-      min_instance_count = 1
+      min_instance_count = 1  # Keep at least 1 instance warm
       max_instance_count = 10
     }
+    
     containers {
       image = module.sfilter-build.image_name
       ports {
         container_port = var.sfilter_port
       }
-      env {
-        name  = "SECONDARY_MODEL"
-        value = var.secondary_model_location
-      }
-
-      volume_mounts {
-          name       = "model-store-volume"
-          mount_path = "/storage/models"
-      }
-
+      
+      # Allocate more CPU for faster model loading
       resources {
         limits = {
-          memory = "32Gi"
-          cpu    = "8"
+          memory = var.sfilter_memory
+          cpu    = "2"
         }
+        cpu_idle = true  # Keep CPU allocated when idle
+        startup_cpu_boost = true  # Faster container startup
+      }
+      
+      env {
+        name  = "SECONDARY_MODEL"
+        value = "/mnt/models/${var.secondary_model_name}"
+      }
+      env{
+        name = "SFILTER_CONFIDENCE_THRESHOLD"
+        value = var.sfilter_confidence_threshold
+      }
+      env{
+        name = "ENABLE_REQUEST_LOGGING"
+        value = var.enable_request_logging
+      }
+      env{
+        name = "MAX_MESSAGE_LENGTH"
+        value = var.max_message_length
+      }
+      
+      # Mount the model from GCS for faster loading
+      volume_mounts {
+        name       = "model-storage"
+        mount_path = "/mnt/models"
       }
     }
-
+    
+    # Add volume for model mounting
     volumes {
-      name = "model-store-volume"
+      name = "model-storage"
       gcs {
         bucket    = google_storage_bucket.model-store.name
-        read_only = true # The service only needs to read the model.
+        read_only = true
       }
     }
+    
+    service_account = google_service_account.sfilter_sa.email
+    vpc_access {
+      connector = google_vpc_access_connector.bfilter-connector.id
+      egress    = "ALL_TRAFFIC"
+    }
+    
+    # Faster startup timeout
+    timeout = "60s"
   }
+
   depends_on = [module.sfilter-build, google_project_service.project_apis, google_cloud_run_v2_job.model_downloader_job, google_storage_bucket_iam_member.run_service_agent_gcs_mount_access]
 }
 
@@ -400,6 +427,18 @@ resource "google_cloud_run_v2_service" "bfilter-service" {
       env{
         name = "PROJECT_ID"
         value = var.project
+      }
+      env{
+        name = "BFILTER_THRESHOLD"
+        value = var.bfilter_threshold
+      }
+      env{
+        name = "ENABLE_REQUEST_LOGGING"
+        value = var.enable_request_logging
+      }
+      env{
+        name = "MAX_MESSAGE_LENGTH"
+        value = var.max_message_length
       }
     }
   }
@@ -518,4 +557,205 @@ resource "google_pubsub_subscription" "secondary_filter_subscription" {
     google_storage_bucket_iam_member.pubsub_to_bucket_creator,
     google_storage_bucket_iam_member.pubsub_to_bucket_reader
    ]
+}
+
+# Cloud Monitoring - Health Check Uptime Checks
+resource "google_monitoring_uptime_check_config" "bfilter_health_check" {
+  display_name = "BFilter Health Check"
+  timeout      = "10s"
+  period       = "60s"
+
+  http_check {
+    use_ssl         = true
+    path            = "/health"
+    port            = "443"
+    request_method  = "GET"
+  }
+
+  monitored_resource {
+    type = "uptime_url"
+    labels = {
+      project_id = var.project
+      host       = google_cloud_run_v2_service.bfilter-service.uri
+    }
+  }
+
+  content_matchers {
+    content = "healthy"
+    matcher = "CONTAINS_STRING"
+  }
+
+  depends_on = [google_cloud_run_v2_service.bfilter-service]
+}
+
+resource "google_monitoring_uptime_check_config" "sfilter_health_check" {
+  display_name = "SFilter Health Check"
+  timeout      = "10s"
+  period       = "60s"
+
+  http_check {
+    use_ssl         = true
+    path            = "/health"
+    port            = "443"
+    request_method  = "GET"
+  }
+
+  monitored_resource {
+    type = "uptime_url"
+    labels = {
+      project_id = var.project
+      host       = google_cloud_run_v2_service.sfilter-service.uri
+    }
+  }
+
+  content_matchers {
+    content = "healthy"
+    matcher = "CONTAINS_STRING"
+  }
+
+  depends_on = [google_cloud_run_v2_service.sfilter-service]
+}
+
+resource "google_monitoring_uptime_check_config" "llmstub_health_check" {
+  display_name = "LLMStub Health Check"
+  timeout      = "10s"
+  period       = "60s"
+
+  http_check {
+    use_ssl         = true
+    path            = "/health"
+    port            = "443"
+    request_method  = "GET"
+  }
+
+  monitored_resource {
+    type = "uptime_url"
+    labels = {
+      project_id = var.project
+      host       = google_cloud_run_v2_service.llm-stub-service.uri
+    }
+  }
+
+  content_matchers {
+    content = "healthy"
+    matcher = "CONTAINS_STRING"
+  }
+
+  depends_on = [google_cloud_run_v2_service.llm-stub-service]
+}
+
+# Alert Policy for Service Health
+resource "google_monitoring_alert_policy" "service_health_alert" {
+  display_name = "LLM Infrastructure Service Health Alert"
+  combiner     = "OR"
+  
+  conditions {
+    display_name = "BFilter Service Down"
+    condition_threshold {
+      filter          = "metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\" AND resource.type=\"uptime_url\""
+      duration        = "300s"
+      comparison      = "COMPARISON_EQUAL"
+      threshold_value = 0
+      
+      aggregations {
+        alignment_period   = "60s"
+        per_series_aligner = "ALIGN_NEXT_OLDER"
+      }
+    }
+  }
+
+  conditions {
+    display_name = "SFilter Service Down"
+    condition_threshold {
+      filter          = "metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\" AND resource.type=\"uptime_url\""
+      duration        = "300s"
+      comparison      = "COMPARISON_EQUAL"
+      threshold_value = 0
+      
+      aggregations {
+        alignment_period   = "60s"
+        per_series_aligner = "ALIGN_NEXT_OLDER"
+      }
+    }
+  }
+
+  conditions {
+    display_name = "LLMStub Service Down"
+    condition_threshold {
+      filter          = "metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\" AND resource.type=\"uptime_url\""
+      duration        = "300s"
+      comparison      = "COMPARISON_EQUAL"
+      threshold_value = 0
+      
+      aggregations {
+        alignment_period   = "60s"
+        per_series_aligner = "ALIGN_NEXT_OLDER"
+      }
+    }
+  }
+
+  notification_channels = [google_monitoring_notification_channel.email_alert.name]
+
+  alert_strategy {
+    auto_close = "1800s"  # Auto-close after 30 minutes
+  }
+
+  depends_on = [
+    google_monitoring_uptime_check_config.bfilter_health_check,
+    google_monitoring_uptime_check_config.sfilter_health_check,
+    google_monitoring_uptime_check_config.llmstub_health_check
+  ]
+}
+
+# Email notification channel (you'll need to replace with actual email)
+resource "google_monitoring_notification_channel" "email_alert" {
+  display_name = "Email Alert Channel"
+  type         = "email"
+  
+  labels = {
+    email_address = "admin@yourdomain.com"  # Replace with actual email
+  }
+  
+  enabled = true
+}
+
+# Alert for high latency (over 100ms average)
+resource "google_monitoring_alert_policy" "latency_alert" {
+  display_name = "High Latency Alert"
+  combiner     = "OR"
+  
+  conditions {
+    display_name = "Request Latency > 100ms"
+    condition_threshold {
+      filter          = "metric.type=\"run.googleapis.com/request_latencies\" AND resource.type=\"cloud_run_revision\""
+      duration        = "300s"
+      comparison      = "COMPARISON_GT"
+      threshold_value = 100  # 100ms in milliseconds
+      
+      aggregations {
+        alignment_period     = "60s"
+        per_series_aligner   = "ALIGN_DELTA"
+        cross_series_reducer = "REDUCE_MEAN"
+        group_by_fields      = ["resource.label.service_name"]
+      }
+    }
+  }
+
+  notification_channels = [google_monitoring_notification_channel.email_alert.name]
+  
+  alert_strategy {
+    auto_close = "1800s"
+  }
+}
+
+###############
+# ARTIFACT REGISTRY
+###############
+resource "google_artifact_registry_repository" "llm-project" {
+  location      = var.region
+  repository_id = "llm-project"
+  description   = "Docker repository for LLM infrastructure components"
+  format        = "DOCKER"
+
+  depends_on = [google_project_service.project_apis]
 }

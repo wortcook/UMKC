@@ -1,5 +1,4 @@
 import json
-
 import joblib
 from flask import Flask, request, render_template_string
 import os
@@ -7,9 +6,16 @@ import requests
 from google.auth.transport import requests as auth_requests
 from google.oauth2 import id_token as google_id_token
 from google.cloud import pubsub_v1
+import hashlib
+import time
 
 LLMSTUB_URL = os.getenv("LLMSTUB_URL")
 SFILTER_URL = os.getenv("SFILTER_URL")
+
+# Configurable parameters
+BFILTER_THRESHOLD = float(os.getenv("BFILTER_THRESHOLD", "0.9"))
+ENABLE_REQUEST_LOGGING = os.getenv("ENABLE_REQUEST_LOGGING", "false").lower() == "true"
+MAX_MESSAGE_LENGTH = int(os.getenv("MAX_MESSAGE_LENGTH", "10000"))
 
 #MODEL LOAD FOR BAYESIAN FILTER
 clf = joblib.load("model.pkl")
@@ -17,9 +23,37 @@ cv = joblib.load("cv.pkl")
 
 app = Flask(__name__)
 
-# The deployHash is loaded but not used in this file.
-# It can be uncommented if needed for logging or headers.
-# deployHash = joblib.load("deployHash.txt")
+# Cache for processed messages to avoid reprocessing
+prediction_cache = {}
+
+def get_cached_prediction(message_hash):
+    """Get cached prediction for a message hash"""
+    return prediction_cache.get(message_hash)
+
+def cache_prediction(message_hash, score):
+    """Cache a prediction result"""
+    if len(prediction_cache) > 1000:  # Simple LRU-like behavior
+        # Remove oldest entries when cache gets too large
+        keys = list(prediction_cache.keys())
+        for key in keys[:100]:  # Remove oldest 100 entries
+            del prediction_cache[key]
+    prediction_cache[message_hash] = score
+
+# Performance tracking
+request_start_times = {}
+
+@app.before_request
+def before_request():
+    request_start_times[request] = time.time()
+    app.request_count = getattr(app, 'request_count', 0) + 1
+
+@app.after_request
+def after_request(response):
+    if request in request_start_times:
+        duration = time.time() - request_start_times[request]
+        app.logger.info(f"Request duration: {duration:.3f}s")
+        del request_start_times[request]
+    return response
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -117,17 +151,36 @@ def index():
 @app.route("/handle", methods=["POST"])
 def main():
     userMessage = request.form.get('message', '')
+    
+    # Input validation
+    if len(userMessage) > MAX_MESSAGE_LENGTH:
+        app.logger.warning(f"Message too long: {len(userMessage)} chars")
+        return "Message too long", 413
+    
     testMessage = userMessage.lower().replace("aeiou0123456789", "")
 
     score = 0.0
 
     if userMessage.strip():
-        processed_message = process_text(testMessage)
-        if processed_message:
-            v = cv.transform([processed_message]).toarray()
-            score = clf.predict_proba(v)[0][1]
+        # Check cache first
+        message_hash = hashlib.md5(userMessage.encode()).hexdigest()
+        cached_result = get_cached_prediction(message_hash)
+        
+        if cached_result is not None:
+            score = cached_result
+            if ENABLE_REQUEST_LOGGING:
+                app.logger.info(f"Cache hit for message hash: {message_hash}")
+        else:
+            processed_message = process_text(testMessage)
+            if processed_message:
+                v = cv.transform([processed_message]).toarray()
+                score = clf.predict_proba(v)[0][1]
+                # Cache the result
+                cache_prediction(message_hash, score)
+                if ENABLE_REQUEST_LOGGING:
+                    app.logger.info(f"BFilter score: {score:.3f} for message length: {len(userMessage)}")
 
-    if score < 0.9:
+    if score < BFILTER_THRESHOLD:
         # If the score is low, proceed to the secondary filter (sfilter).
         try:
             make_authenticated_post_request(SFILTER_URL, data={"message": userMessage})
@@ -163,7 +216,7 @@ def main():
                 return "I don't understand your message, can you say it another way? (secondary)"
             else:
                 app.logger.error(f"HTTP error during sfilter check for URL {SFILTER_URL}: {e}")
-                return f"Error communicating with the secondary filter. {response.status_code}", 503
+                return f"Error communicating with the secondary filter. {e.response.status_code}", 503
 
         # If sfilter passes (returns 200 OK), call the final LLM stub.
         try:
@@ -174,6 +227,67 @@ def main():
             return "Error communicating with the primary service.", 503
     else:
         return "I don't understand your message, can you say it another way?"
+
+# Health check endpoint
+@app.route("/health", methods=["GET"])
+def health_check():
+    """Health check endpoint for load balancer"""
+    try:
+        # Quick model validation
+        test_vector = cv.transform(["test"]).toarray()
+        clf.predict_proba(test_vector)
+        return {"status": "healthy", "timestamp": time.time()}, 200
+    except Exception as e:
+        app.logger.error(f"Health check failed: {e}")
+        return {"status": "unhealthy", "error": str(e)}, 503
+
+# Readiness check endpoint  
+@app.route("/ready", methods=["GET"])
+def readiness_check():
+    """Readiness check to verify dependencies are available"""
+    errors = []
+    
+    # Check if required environment variables are set
+    if not LLMSTUB_URL:
+        errors.append("LLMSTUB_URL not configured")
+    if not SFILTER_URL:
+        errors.append("SFILTER_URL not configured")
+    
+    # Test connectivity to dependencies (with timeout)
+    try:
+        # Quick ping to sfilter
+        response = requests.get(f"{SFILTER_URL.replace('/', '')}/health", timeout=2)
+        if response.status_code != 200:
+            errors.append(f"SFilter unhealthy: {response.status_code}")
+    except Exception as e:
+        errors.append(f"SFilter unreachable: {str(e)}")
+    
+    try:
+        # Quick ping to llmstub  
+        response = requests.get(f"{LLMSTUB_URL.replace('/', '')}/health", timeout=2)
+        if response.status_code != 200:
+            errors.append(f"LLMStub unhealthy: {response.status_code}")
+    except Exception as e:
+        errors.append(f"LLMStub unreachable: {str(e)}")
+    
+    if errors:
+        return {"status": "not_ready", "errors": errors}, 503
+    else:
+        return {"status": "ready", "timestamp": time.time()}, 200
+
+# Metrics endpoint for monitoring
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    """Basic metrics endpoint"""
+    return {
+        "cache_size": len(prediction_cache),
+        "uptime": time.time() - app.start_time,
+        "total_requests": getattr(app, 'request_count', 0)
+    }, 200
+
+# Initialize app start time and request counter
+app.start_time = time.time()
+app.request_count = 0
 
 if __name__ == "__main__":
     app.run(debug=True, port=8082, host='0.0.0.0')
