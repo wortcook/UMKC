@@ -105,8 +105,11 @@ make clean
 make cli ARGS="version"
 make cli ARGS="config"
 
-# Future commands (Phase 3+):
-./opengenome ingest --input /data/raw/genome.fasta
+# Data ingestion (Phase 3):
+./opengenome ingest organelle --max-sequences 10000
+./opengenome ingest organelle --chunk-size 25000 --compression zstd
+
+# Future commands (Phase 4+):
 ./opengenome analyze kmer --k 6
 ./opengenome visualize --output /results/figures/
 ```
