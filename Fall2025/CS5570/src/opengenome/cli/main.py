@@ -414,6 +414,153 @@ def analyze_kmer(ctx, input, output, k, skip_n, min_count, top):
         sys.exit(1)
 
 
+@analyze.command("codon")
+@click.pass_context
+@click.option(
+    "--input",
+    required=True,
+    help="Input Parquet path (e.g., /data/parquet/organelle/*.parquet)"
+)
+@click.option(
+    "--output",
+    default="/results/codon",
+    help="Output directory for results (default: /results/codon)"
+)
+@click.option(
+    "--frame",
+    type=click.IntRange(0, 2),
+    default=0,
+    help="Reading frame (0, 1, or 2, default: 0)"
+)
+@click.option(
+    "--skip-n",
+    is_flag=True,
+    default=True,
+    help="Skip codons containing N (default: True)"
+)
+@click.option(
+    "--skip-stops",
+    is_flag=True,
+    default=False,
+    help="Exclude stop codons from analysis"
+)
+@click.option(
+    "--min-count",
+    type=int,
+    default=1,
+    help="Minimum codon count to include (default: 1)"
+)
+@click.option(
+    "--rscu",
+    is_flag=True,
+    default=False,
+    help="Calculate RSCU (Relative Synonymous Codon Usage)"
+)
+@click.option(
+    "--top",
+    type=int,
+    default=30,
+    help="Number of top codons to display (default: 30)"
+)
+def analyze_codon(ctx, input, output, frame, skip_n, skip_stops, min_count, rscu, top):
+    """
+    Analyze codon usage patterns in sequences.
+    
+    Performs MapReduce codon counting and optional RSCU calculation.
+    
+    Example:
+        ./opengenome analyze codon --input /data/parquet/organelle/*.parquet
+        ./opengenome analyze codon --frame 0 --skip-stops --rscu --top 20
+    """
+    from opengenome.spark.session import get_spark_session
+    from opengenome.analysis import CodonAnalyzer
+    
+    try:
+        # Display header
+        click.echo("=" * 60)
+        click.echo(" " * 20 + f"Codon Usage Analysis (frame={frame})")
+        click.echo("=" * 60)
+        click.echo()
+        
+        # Initialize Spark
+        click.echo("[1/4] Initializing Spark session...")
+        spark = get_spark_session(
+            app_name=f"CodonAnalysis-frame{frame}",
+            master=None  # Uses SPARK_MASTER from env
+        )
+        
+        # Initialize analyzer
+        click.echo(f"[2/4] Loading sequences from {input}")
+        analyzer = CodonAnalyzer(spark, frame=frame)
+        
+        # Run analysis
+        click.echo(f"\n[3/4] Running MapReduce codon analysis...")
+        click.echo("  Parameters:")
+        click.echo(f"    Reading frame: {frame}")
+        click.echo(f"    Skip N: {skip_n}")
+        click.echo(f"    Skip stops: {skip_stops}")
+        click.echo(f"    Min count: {min_count}")
+        
+        codon_df = analyzer.analyze(
+            input_path=input,
+            output_path=output,
+            skip_n=skip_n,
+            skip_stops=skip_stops,
+            min_count=min_count
+        )
+        
+        # Get statistics
+        stats = analyzer.get_statistics(codon_df)
+        
+        # Calculate RSCU if requested
+        if rscu:
+            click.echo("\n  Calculating RSCU...")
+            rscu_df = analyzer.calculate_rscu(codon_df)
+            rscu_output = output + "_rscu"
+            rscu_df.write.mode("overwrite").parquet(rscu_output)
+            click.echo(f"  RSCU results saved to: {rscu_output}")
+        
+        # Display results
+        click.echo("\n[4/4] Results:")
+        click.echo("=" * 60)
+        click.echo("\nStatistics:")
+        click.echo(f"  Unique codons: {stats['unique_codons']:,}")
+        click.echo(f"  Total occurrences: {stats['total_count']:,}")
+        click.echo(f"  Mean frequency: {stats['mean_freq']:.6f}")
+        click.echo(f"  Max frequency: {stats['max_freq']:.6f}")
+        click.echo(f"  Min frequency: {stats['min_freq']:.6f}")
+        
+        # Display top codons
+        click.echo(f"\nTop {top} codons:")
+        click.echo(f"{'Codon':<8}{'Count':>15}{'AA':>6}{'Frequency':>12}")
+        click.echo("-" * 41)
+        
+        top_codons = analyzer.get_top_codons(codon_df, n=top)
+        for codon, count, aa in top_codons:
+            freq = count / stats['total_count']
+            click.echo(f"{codon:<8}{count:>15,}{aa:>6}{freq:>12.4%}")
+        
+        # Display RSCU info if calculated
+        if rscu:
+            preferred = analyzer.get_preferred_codons(rscu_df, threshold=1.0)
+            click.echo(f"\nPreferred codons (RSCU > 1.0): {len(preferred)}")
+            click.echo(f"{'Codon':<8}{'RSCU':>10}{'AA':>6}")
+            click.echo("-" * 24)
+            for codon, rscu_val, aa in preferred[:20]:
+                click.echo(f"{codon:<8}{rscu_val:>10.3f}{aa:>6}")
+        
+        click.echo("\n" + "=" * 60)
+        click.echo(f"Results saved to: {output}")
+        click.echo("=" * 60)
+        
+    except Exception as e:
+        click.echo(f"\n✗ Codon analysis failed: {e}", err=True)
+        if ctx.obj.get("DEBUG"):
+            import traceback
+            click.echo("\n" + traceback.format_exc(), err=True)
+        sys.exit(1)
+
+
 @cli.group()
 def visualize():
     """Visualization commands."""
