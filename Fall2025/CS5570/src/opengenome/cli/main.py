@@ -297,6 +297,123 @@ def analyze():
     pass
 
 
+@analyze.command("kmer")
+@click.option(
+    "--input",
+    type=click.Path(exists=False),
+    default="/data/parquet/organelle/*.parquet",
+    help="Input Parquet file pattern"
+)
+@click.option(
+    "--output",
+    type=click.Path(),
+    default="/results/kmer",
+    help="Output directory for results"
+)
+@click.option(
+    "--k",
+    type=int,
+    default=6,
+    help="K-mer length (typically 6-8)"
+)
+@click.option(
+    "--skip-n/--no-skip-n",
+    default=True,
+    help="Skip k-mers containing N (ambiguous base)"
+)
+@click.option(
+    "--min-count",
+    type=int,
+    default=1,
+    help="Minimum frequency threshold"
+)
+@click.option(
+    "--top",
+    type=int,
+    default=20,
+    help="Number of top k-mers to display"
+)
+@click.pass_context
+def analyze_kmer(ctx, input, output, k, skip_n, min_count, top):
+    """
+    Perform k-mer frequency analysis.
+    
+    Uses MapReduce to count k-mer occurrences across all sequences.
+    Results are saved as Parquet and top k-mers are displayed.
+    
+    \b
+    Example:
+        opengenome analyze kmer --k 6
+        opengenome analyze kmer --k 8 --min-count 10 --top 50
+    """
+    from opengenome.analysis import KmerAnalyzer
+    from opengenome.spark.session import get_spark_session, stop_spark_session
+    
+    try:
+        click.echo("=" * 60)
+        click.echo(f"K-mer Frequency Analysis (k={k})")
+        click.echo("=" * 60)
+        
+        # Start Spark session
+        click.echo("\n[1/4] Initializing Spark session...")
+        spark = get_spark_session(app_name=f"KmerAnalysis-k{k}")
+        click.echo(f"✓ Spark {spark.version} ready")
+        
+        # Initialize analyzer
+        click.echo(f"\n[2/4] Loading sequences from {input}")
+        analyzer = KmerAnalyzer(spark, k=k)
+        
+        # Run analysis
+        click.echo(f"\n[3/4] Running MapReduce k-mer analysis...")
+        click.echo(f"  Parameters:")
+        click.echo(f"    k-mer length: {k}")
+        click.echo(f"    Skip N: {skip_n}")
+        click.echo(f"    Min count: {min_count}")
+        
+        kmer_df = analyzer.analyze(
+            input_path=input,
+            output_path=output,
+            skip_n=skip_n,
+            min_count=min_count
+        )
+        
+        # Display results
+        click.echo(f"\n[4/4] Results:")
+        click.echo("=" * 60)
+        
+        # Statistics
+        stats = analyzer.get_statistics(kmer_df)
+        click.echo(f"\nStatistics:")
+        click.echo(f"  Unique k-mers: {stats['total_kmers']:,}")
+        click.echo(f"  Total occurrences: {stats['total_count']:,}")
+        click.echo(f"  Mean frequency: {stats['mean_count']:.2f}")
+        click.echo(f"  Max frequency: {stats['max_count']:,}")
+        click.echo(f"  Min frequency: {stats['min_count']:,}")
+        
+        # Top k-mers
+        click.echo(f"\nTop {top} k-mers:")
+        click.echo(f"{'K-mer':<{k+2}} {'Count':>12}")
+        click.echo("-" * (k + 16))
+        
+        top_kmers = analyzer.get_top_kmers(kmer_df, n=top)
+        for kmer, count in top_kmers:
+            click.echo(f"{kmer:<{k+2}} {count:>12,}")
+        
+        click.echo("\n" + "=" * 60)
+        click.echo(f"Results saved to: {output}")
+        click.echo("=" * 60)
+        
+        # Cleanup
+        stop_spark_session()
+        
+    except Exception as e:
+        click.echo(f"\n✗ K-mer analysis failed: {e}", err=True)
+        if ctx.obj.get("DEBUG"):
+            import traceback
+            click.echo("\n" + traceback.format_exc(), err=True)
+        sys.exit(1)
+
+
 @cli.group()
 def visualize():
     """Visualization commands."""

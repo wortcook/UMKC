@@ -78,8 +78,14 @@ def get_spark_session(
         spark_conf.set("spark.sql.adaptive.enabled", "true")
         spark_conf.set("spark.sql.adaptive.coalescePartitions.enabled", "true")
     
-    # Shuffle partitions
+    # Shuffle partitions (must be integer, not "auto")
     shuffle_partitions = os.environ.get("SPARK_SQL_SHUFFLE_PARTITIONS", "200")
+    try:
+        # Validate it's a valid integer
+        int(shuffle_partitions)
+    except ValueError:
+        logger.warning(f"Invalid shuffle partitions '{shuffle_partitions}', using default '200'")
+        shuffle_partitions = "200"
     spark_conf.set("spark.sql.shuffle.partitions", shuffle_partitions)
     
     # Network configuration
