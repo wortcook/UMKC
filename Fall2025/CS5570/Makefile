@@ -17,6 +17,7 @@ help:
 	@echo "  make test           Run test suite"
 	@echo "  make ps             Show running containers"
 	@echo "  make spark-ui       Open Spark Master UI in browser"
+	@echo "  make cli            Run OpenGenome CLI (use ARGS=\"command\")"
 
 # Build all containers
 build:
@@ -83,6 +84,13 @@ shell:
 # Open Python REPL in master container
 python:
 	docker exec -it opengenome-spark-master python3
+
+# Run OpenGenome CLI
+cli:
+	@echo "OpenGenome CLI - pass commands after 'make cli ARGS=\"...\"'"
+	@echo "Example: make cli ARGS=\"version\""
+	@echo "Or use: ./opengenome <command>"
+	docker exec -it opengenome-spark-master python3 /opt/opengenome/src/opengenome/cli/main.py $(ARGS)
 
 # Show running containers
 ps:

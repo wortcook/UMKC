@@ -44,8 +44,9 @@ RUN mkdir -p /opt/opengenome
 WORKDIR /opt/opengenome
 
 # Configure Spark environment
+# Note: Py4J jar is auto-detected at runtime via glob pattern
 ENV SPARK_HOME=/opt/spark \
-    PYTHONPATH=/opt/opengenome/src:$PYTHONPATH \
+    PYTHONPATH=/opt/spark/python:/opt/spark/python/lib/py4j-*-src.zip:/opt/opengenome/src:$PYTHONPATH \
     PYSPARK_PYTHON=python3 \
     PYSPARK_DRIVER_PYTHON=python3
 

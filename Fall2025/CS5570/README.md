@@ -96,12 +96,19 @@ make clean
 ### Running Analysis
 
 ```bash
-# (Phase 2+) Example CLI usage:
-make shell
-# Inside container:
-python3 -m opengenome.cli ingest --input /data/raw/genome.fasta
-python3 -m opengenome.cli analyze kmer --k 6
-python3 -m opengenome.cli visualize --output /results/figures/
+# Use the CLI wrapper script:
+./opengenome version
+./opengenome config
+./opengenome info --spark-ui
+
+# Or use make:
+make cli ARGS="version"
+make cli ARGS="config"
+
+# Future commands (Phase 3+):
+./opengenome ingest --input /data/raw/genome.fasta
+./opengenome analyze kmer --k 6
+./opengenome visualize --output /results/figures/
 ```
 
 ## Project Structure

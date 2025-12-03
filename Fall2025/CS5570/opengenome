@@ -1,0 +1,7 @@
+#!/bin/bash
+#
+# OpenGenome2 CLI wrapper script
+# Executes CLI commands inside the Spark master container
+#
+
+docker exec -it opengenome-spark-master python3 /opt/opengenome/src/opengenome/cli/main.py "$@"
