@@ -567,6 +567,223 @@ def visualize():
     pass
 
 
+@cli.group()
+def visualize():
+    """
+    Create visualizations from analysis results.
+    
+    \b
+    Examples:
+      # K-mer distribution
+      opengenome visualize kmer --input /results/kmer --output /results/figs/kmers.png
+      
+      # Codon usage
+      opengenome visualize codon --input /results/codon --output /results/figs/codons.png
+      
+      # GC content
+      opengenome visualize gc --input /data/parquet/organelle --output /results/figs/gc.png
+    """
+    pass
+
+
+@visualize.command()
+@click.option("--input", required=True, help="Input Parquet path (k-mer results)")
+@click.option("--output", required=True, help="Output PNG file path")
+@click.option("--top", default=20, help="Number of top k-mers to display")
+@click.option("--title", default=None, help="Custom chart title")
+@click.option("--color", default="skyblue", help="Bar color")
+@click.option("--dpi", default=200, help="Output DPI")
+@click.option("--width", default=12, help="Figure width in inches")
+@click.option("--height", default=7, help="Figure height in inches")
+@click.pass_context
+def kmer(ctx, input, output, top, title, color, dpi, width, height):
+    """Create k-mer frequency distribution bar chart."""
+    from opengenome.spark.session import get_spark_session, stop_spark_session
+    from opengenome.visualization.plots import plot_kmer_distribution
+    
+    debug = ctx.obj.get("DEBUG", False)
+    
+    try:
+        click.echo("[1/3] Initializing Spark session...")
+        spark = get_spark_session(app_name="VisualizeKmer")
+        
+        click.echo(f"[2/3] Loading k-mer data from {input}...")
+        click.echo(f"[3/3] Creating visualization...")
+        
+        output_path = plot_kmer_distribution(
+            input_path=input,
+            output_path=output,
+            top_n=top,
+            figsize=(width, height),
+            dpi=dpi,
+            title=title,
+            color=color
+        )
+        
+        click.echo("=" * 60)
+        click.echo(f"✓ Visualization saved to: {output_path}")
+        click.echo("=" * 60)
+        
+        stop_spark_session()
+        
+    except Exception as e:
+        click.echo(f"Error: K-mer visualization failed: {e}", err=True)
+        if debug:
+            import traceback
+            traceback.print_exc()
+        stop_spark_session()
+        sys.exit(1)
+
+
+@visualize.command()
+@click.option("--input", required=True, help="Input Parquet path (codon results)")
+@click.option("--output", required=True, help="Output PNG file path")
+@click.option("--top", default=30, help="Number of top codons to display")
+@click.option("--title", default=None, help="Custom chart title")
+@click.option("--color", default="lightcoral", help="Bar color")
+@click.option("--show-aa", is_flag=True, default=True, help="Show amino acid labels")
+@click.option("--dpi", default=200, help="Output DPI")
+@click.option("--width", default=14, help="Figure width in inches")
+@click.option("--height", default=7, help="Figure height in inches")
+@click.pass_context
+def codon(ctx, input, output, top, title, color, show_aa, dpi, width, height):
+    """Create codon usage frequency bar chart."""
+    from opengenome.spark.session import get_spark_session, stop_spark_session
+    from opengenome.visualization.plots import plot_codon_usage
+    
+    debug = ctx.obj.get("DEBUG", False)
+    
+    try:
+        click.echo("[1/3] Initializing Spark session...")
+        spark = get_spark_session(app_name="VisualizeCodon")
+        
+        click.echo(f"[2/3] Loading codon data from {input}...")
+        click.echo(f"[3/3] Creating visualization...")
+        
+        output_path = plot_codon_usage(
+            input_path=input,
+            output_path=output,
+            top_n=top,
+            figsize=(width, height),
+            dpi=dpi,
+            title=title,
+            color=color,
+            show_amino_acids=show_aa
+        )
+        
+        click.echo("=" * 60)
+        click.echo(f"✓ Visualization saved to: {output_path}")
+        click.echo("=" * 60)
+        
+        stop_spark_session()
+        
+    except Exception as e:
+        click.echo(f"Error: Codon visualization failed: {e}", err=True)
+        if debug:
+            import traceback
+            traceback.print_exc()
+        stop_spark_session()
+        sys.exit(1)
+
+
+@visualize.command()
+@click.option("--input", required=True, help="Input Parquet path (sequence data)")
+@click.option("--output", required=True, help="Output PNG file path")
+@click.option("--bins", default=50, help="Number of histogram bins")
+@click.option("--title", default=None, help="Custom chart title")
+@click.option("--color", default="mediumseagreen", help="Histogram color")
+@click.option("--dpi", default=200, help="Output DPI")
+@click.option("--width", default=12, help="Figure width in inches")
+@click.option("--height", default=7, help="Figure height in inches")
+@click.pass_context
+def gc(ctx, input, output, bins, title, color, dpi, width, height):
+    """Create GC content distribution histogram."""
+    from opengenome.spark.session import get_spark_session, stop_spark_session
+    from opengenome.visualization.plots import plot_gc_content
+    
+    debug = ctx.obj.get("DEBUG", False)
+    
+    try:
+        click.echo("[1/3] Initializing Spark session...")
+        spark = get_spark_session(app_name="VisualizeGC")
+        
+        click.echo(f"[2/3] Loading sequence data from {input}...")
+        click.echo(f"[3/3] Creating visualization...")
+        
+        output_path = plot_gc_content(
+            input_path=input,
+            output_path=output,
+            bins=bins,
+            figsize=(width, height),
+            dpi=dpi,
+            title=title,
+            color=color
+        )
+        
+        click.echo("=" * 60)
+        click.echo(f"✓ Visualization saved to: {output_path}")
+        click.echo("=" * 60)
+        
+        stop_spark_session()
+        
+    except Exception as e:
+        click.echo(f"Error: GC content visualization failed: {e}", err=True)
+        if debug:
+            import traceback
+            traceback.print_exc()
+        stop_spark_session()
+        sys.exit(1)
+
+
+@visualize.command()
+@click.option("--input", required=True, help="Input Parquet path (sequence data)")
+@click.option("--output", required=True, help="Output PNG file path")
+@click.option("--bins", default=50, help="Number of histogram bins")
+@click.option("--title", default=None, help="Custom chart title")
+@click.option("--color", default="mediumpurple", help="Histogram color")
+@click.option("--dpi", default=200, help="Output DPI")
+@click.option("--width", default=12, help="Figure width in inches")
+@click.option("--height", default=7, help="Figure height in inches")
+@click.pass_context
+def length(ctx, input, output, bins, title, color, dpi, width, height):
+    """Create sequence length distribution histogram."""
+    from opengenome.spark.session import get_spark_session, stop_spark_session
+    from opengenome.visualization.plots import plot_sequence_length_distribution
+    
+    debug = ctx.obj.get("DEBUG", False)
+    
+    try:
+        click.echo("[1/3] Initializing Spark session...")
+        spark = get_spark_session(app_name="VisualizeLength")
+        
+        click.echo(f"[2/3] Loading sequence data from {input}...")
+        click.echo(f"[3/3] Creating visualization...")
+        
+        output_path = plot_sequence_length_distribution(
+            input_path=input,
+            output_path=output,
+            bins=bins,
+            figsize=(width, height),
+            dpi=dpi,
+            title=title,
+            color=color
+        )
+        
+        click.echo("=" * 60)
+        click.echo(f"✓ Visualization saved to: {output_path}")
+        click.echo("=" * 60)
+        
+        stop_spark_session()
+        
+    except Exception as e:
+        click.echo(f"Error: Length distribution visualization failed: {e}", err=True)
+        if debug:
+            import traceback
+            traceback.print_exc()
+        stop_spark_session()
+        sys.exit(1)
+
+
 @cli.command()
 @click.option("--spark-ui", is_flag=True, help="Show Spark UI URL")
 def info(spark_ui):
