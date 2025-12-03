@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Data directories (large files)
+data/raw/*
+data/parquet/*
+!data/raw/.gitkeep
+!data/parquet/.gitkeep
+data/samples/*
+!data/samples/.gitkeep
+
+# Results (generated outputs)
+results/
+mlruns/
+
+# Cache
+cache/
+*.pyc
+
+# Logs
+logs/
+*.log
+
+# Environment (CRITICAL: Never commit credentials!)
+.env
+.env.local
+.env.production
+# Templates are OK to commit:
+!.env.example
+
+# Docker
+docker-compose.override.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# DVC
+.dvc/cache/

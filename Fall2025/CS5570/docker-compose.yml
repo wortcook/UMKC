@@ -1,0 +1,139 @@
+# Docker Compose configuration for OpenGenome2 Spark cluster
+# Note: 'version' field removed (deprecated in Compose V2)
+
+services:
+  spark-master:
+    build:
+      context: ./docker/spark-master
+      dockerfile: Dockerfile
+    container_name: opengenome-spark-master
+    hostname: spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    environment:
+      - SPARK_NO_DAEMONIZE=true
+    ports:
+      - "8081:8080"  # Spark Master Web UI (external access)
+      # Note: 7077 NOT exposed - keeps RPC internal to Docker network
+    expose:
+      - "7077"  # Spark Master RPC (internal only)
+    volumes:
+      - ./src:/opt/opengenome/src:ro
+      - ./data:/data
+      - ./results:/results
+      - ./cache:/cache
+      - ./logs:/logs
+      - ./mlruns:/mlruns
+    networks:
+      - spark-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '2'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  spark-worker-1:
+    build:
+      context: ./docker/spark-worker
+      dockerfile: Dockerfile
+    container_name: opengenome-spark-worker-1
+    hostname: spark-worker-1
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --memory 6g --cores 4
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_NO_DAEMONIZE=true
+    volumes:
+      - ./data:/data:ro
+      - ./cache:/cache
+      - ./results:/results
+    networks:
+      - spark-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 7G
+        reservations:
+          cpus: '2'
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "org.apache.spark.deploy.worker.Worker"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  spark-worker-2:
+    build:
+      context: ./docker/spark-worker
+      dockerfile: Dockerfile
+    container_name: opengenome-spark-worker-2
+    hostname: spark-worker-2
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --memory 6g --cores 4
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_NO_DAEMONIZE=true
+    volumes:
+      - ./data:/data:ro
+      - ./cache:/cache
+      - ./results:/results
+    networks:
+      - spark-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 7G
+        reservations:
+          cpus: '2'
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "org.apache.spark.deploy.worker.Worker"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  spark-network:
+    driver: bridge
+
+# Shared logging configuration for all services
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+    labels: "service,environment"
+
+volumes:
+  spark-logs:
+    driver: local
