@@ -107,6 +107,190 @@ def ingest():
     pass
 
 
+@ingest.command("organelle")
+@click.option(
+    "--output",
+    type=click.Path(),
+    default="/data/parquet/organelle",
+    help="Output directory for Parquet files"
+)
+@click.option(
+    "--chunk-size",
+    type=int,
+    default=50000,
+    help="Sequences per Parquet shard"
+)
+@click.option(
+    "--compression",
+    type=click.Choice(["snappy", "gzip", "zstd", "none"]),
+    default="snappy",
+    help="Compression codec"
+)
+@click.option(
+    "--max-sequences",
+    type=int,
+    default=None,
+    help="Maximum sequences to process (for testing)"
+)
+@click.pass_context
+def ingest_organelle(ctx, output, chunk_size, compression, max_sequences):
+    """
+    Ingest organelle sequences from HuggingFace.
+    
+    Downloads the organelle FASTA file from arcinstitute/opengenome2
+    and converts it to Parquet shards for Spark processing.
+    
+    \b
+    Example:
+        opengenome ingest organelle
+        opengenome ingest organelle --chunk-size 100000 --compression zstd
+    """
+    from opengenome.ingestion import FASTADownloader, FASTAToParquetConverter
+    
+    try:
+        click.echo("=" * 60)
+        click.echo("OpenGenome2 Data Ingestion: Organelle Sequences")
+        click.echo("=" * 60)
+        
+        # Step 1: Download FASTA
+        click.echo("\n[1/2] Downloading organelle sequences from HuggingFace...")
+        downloader = FASTADownloader()
+        fasta_path = downloader.download_organelle_sequences()
+        click.echo(f"✓ Downloaded to: {fasta_path}")
+        
+        # Step 2: Convert to Parquet
+        click.echo(f"\n[2/2] Converting FASTA to Parquet...")
+        click.echo(f"  Chunk size: {chunk_size:,} sequences/shard")
+        click.echo(f"  Compression: {compression}")
+        click.echo(f"  Output: {output}")
+        
+        converter = FASTAToParquetConverter(
+            chunk_rows=chunk_size,
+            compression=compression,
+            output_dir=Path(output).parent
+        )
+        
+        stats = converter.convert(
+            fasta_path=fasta_path,
+            source_name="organelle",
+            output_subdir=Path(output).name,
+            max_sequences=max_sequences
+        )
+        
+        # Display results
+        click.echo("\n" + "=" * 60)
+        click.echo("Ingestion Complete!")
+        click.echo("=" * 60)
+        click.echo(f"  Total sequences: {stats['total_sequences']:,}")
+        click.echo(f"  Total bases: {stats['total_bases']:,}")
+        click.echo(f"  Parquet shards: {stats['total_shards']}")
+        click.echo(f"  Output path: {stats['output_path']}")
+        click.echo("=" * 60)
+        
+        if ctx.obj.get("DEBUG"):
+            click.echo("\nDebug info:")
+            click.echo(f"  FASTA path: {fasta_path}")
+            click.echo(f"  Avg sequence length: {stats['total_bases'] // stats['total_sequences']:,}")
+        
+    except Exception as e:
+        click.echo(f"\n✗ Ingestion failed: {e}", err=True)
+        if ctx.obj.get("DEBUG"):
+            import traceback
+            click.echo("\n" + traceback.format_exc(), err=True)
+        sys.exit(1)
+
+
+@ingest.command("custom")
+@click.option(
+    "--filename",
+    required=True,
+    help="Filename within HuggingFace dataset"
+)
+@click.option(
+    "--output",
+    type=click.Path(),
+    required=True,
+    help="Output directory for Parquet files"
+)
+@click.option(
+    "--source-name",
+    default="custom",
+    help="Source identifier for sequences"
+)
+@click.option(
+    "--chunk-size",
+    type=int,
+    default=50000,
+    help="Sequences per Parquet shard"
+)
+@click.option(
+    "--compression",
+    type=click.Choice(["snappy", "gzip", "zstd", "none"]),
+    default="snappy",
+    help="Compression codec"
+)
+@click.pass_context
+def ingest_custom(ctx, filename, output, source_name, chunk_size, compression):
+    """
+    Ingest custom FASTA file from HuggingFace.
+    
+    \b
+    Example:
+        opengenome ingest custom \\
+            --filename fasta/bacteria/ecoli.fasta.gz \\
+            --output /data/parquet/ecoli \\
+            --source-name ecoli
+    """
+    from opengenome.ingestion import FASTADownloader, FASTAToParquetConverter
+    
+    try:
+        click.echo("=" * 60)
+        click.echo(f"OpenGenome2 Data Ingestion: {filename}")
+        click.echo("=" * 60)
+        
+        # Step 1: Download FASTA
+        click.echo("\n[1/2] Downloading from HuggingFace...")
+        downloader = FASTADownloader()
+        fasta_path = downloader.download_custom_fasta(filename)
+        click.echo(f"✓ Downloaded to: {fasta_path}")
+        
+        # Step 2: Convert to Parquet
+        click.echo(f"\n[2/2] Converting FASTA to Parquet...")
+        click.echo(f"  Source name: {source_name}")
+        click.echo(f"  Chunk size: {chunk_size:,} sequences/shard")
+        click.echo(f"  Compression: {compression}")
+        click.echo(f"  Output: {output}")
+        
+        converter = FASTAToParquetConverter(
+            chunk_rows=chunk_size,
+            compression=compression,
+            output_dir=Path(output).parent
+        )
+        
+        stats = converter.convert(
+            fasta_path=fasta_path,
+            source_name=source_name,
+            output_subdir=Path(output).name
+        )
+        
+        # Display results
+        click.echo("\n" + "=" * 60)
+        click.echo("Ingestion Complete!")
+        click.echo("=" * 60)
+        click.echo(f"  Total sequences: {stats['total_sequences']:,}")
+        click.echo(f"  Total bases: {stats['total_bases']:,}")
+        click.echo(f"  Parquet shards: {stats['total_shards']}")
+        click.echo(f"  Output path: {stats['output_path']}")
+        click.echo("=" * 60)
+        
+    except Exception as e:
+        click.echo(f"\n✗ Ingestion failed: {e}", err=True)
+        if ctx.obj.get("DEBUG"):
+            import traceback
+            click.echo("\n" + traceback.format_exc(), err=True)
+        sys.exit(1)
+
+
 @cli.group()
 def analyze():
     """Analysis commands (k-mer, codon, statistics)."""
