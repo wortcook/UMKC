@@ -826,6 +826,248 @@ def info(spark_ui):
         sys.exit(1)
 
 
+@cli.group()
+def search():
+    """
+    Sequence similarity search commands.
+    
+    Build an index and search for similar sequences using k-mer-based
+    TF-IDF vectorization and cosine similarity.
+    """
+    pass
+
+
+@search.command("build-index")
+@click.option(
+    "--input",
+    "input_path",
+    required=True,
+    type=click.Path(exists=True),
+    help="Input sequence data (Parquet)",
+)
+@click.option(
+    "--k",
+    default=6,
+    type=int,
+    help="K-mer length (default: 6)",
+    show_default=True,
+)
+@click.option(
+    "--skip-n",
+    is_flag=True,
+    default=True,
+    help="Skip k-mers containing 'N' or non-ATGC bases (default: True)",
+    show_default=True,
+)
+@click.option(
+    "--max-sequences",
+    type=int,
+    help="Limit number of sequences to index (for testing)",
+)
+def search_build_index(input_path, k, skip_n, max_sequences):
+    """
+    Build search index from sequence data.
+    
+    This extracts k-mers from all sequences and computes TF-IDF weights
+    and vector norms for fast similarity search.
+    
+    Example:
+        opengenome search build-index --input /data/sequences.parquet --k 6
+    """
+    from opengenome.search import SequenceSearcher
+    from opengenome.spark.session import get_spark_session
+    from py4j.protocol import Py4JNetworkError
+    
+    try:
+        click.echo("=" * 60)
+        click.echo("Building Sequence Search Index")
+        click.echo("=" * 60)
+        
+        # Progress indicator
+        click.echo("\n[1/4] Connecting to Spark cluster...")
+        spark = get_spark_session(
+            app_name="opengenome-search-build",
+            master="spark://spark-master:7077"
+        )
+        
+        click.echo(f"[2/4] Initializing searcher (k={k})...")
+        searcher = SequenceSearcher(spark, k=k)
+        
+        click.echo("[3/4] Building index (this may take several minutes)...")
+        click.echo(f"  Input: {input_path}")
+        click.echo(f"  K-mer size: {k}")
+        click.echo(f"  Skip non-ATGC: {skip_n}")
+        if max_sequences:
+            click.echo(f"  Max sequences: {max_sequences}")
+        
+        searcher.build_index(
+            input_path=input_path,
+            skip_n=skip_n,
+            max_sequences=max_sequences
+        )
+        
+        click.echo("[4/4] Retrieving statistics...")
+        stats = searcher.get_statistics()
+        
+        if stats:
+            click.echo("\n" + "=" * 60)
+            click.echo("Index Statistics:")
+            click.echo("=" * 60)
+            click.echo(f"  Sequences indexed: {stats['num_sequences']:,}")
+            click.echo(f"  Unique k-mers: {stats['num_unique_kmers']:,}")
+            click.echo(f"  K-mer size: {stats['k']}")
+        
+        click.echo("\n✓ Index built successfully!")
+        click.echo("\nUse 'opengenome search query' to search for similar sequences.")
+        
+        stop_spark_session()
+    
+    except Py4JNetworkError:
+        click.echo("Error: Cannot connect to Spark master", err=True)
+        click.echo("Ensure the cluster is running: make up", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"Error: Failed to build index", err=True)
+        click.echo(f"Details: {type(e).__name__}: {e}", err=True)
+        logger.error("Index building failed", exc_info=True)
+        sys.exit(1)
+
+
+@search.command("query")
+@click.option(
+    "--input",
+    "input_path",
+    required=True,
+    type=click.Path(exists=True),
+    help="Input sequence data (Parquet) - must be indexed first",
+)
+@click.option(
+    "--query",
+    "query_sequence",
+    required=True,
+    type=str,
+    help="Query sequence (DNA string)",
+)
+@click.option(
+    "--k",
+    default=6,
+    type=int,
+    help="K-mer length (must match index)",
+    show_default=True,
+)
+@click.option(
+    "--top",
+    "top_n",
+    default=20,
+    type=int,
+    help="Number of top results to return",
+    show_default=True,
+)
+@click.option(
+    "--use-idf",
+    is_flag=True,
+    default=True,
+    help="Use IDF weighting (TF-IDF vs TF only)",
+    show_default=True,
+)
+@click.option(
+    "--skip-n",
+    is_flag=True,
+    default=True,
+    help="Skip query k-mers containing 'N' or non-ATGC",
+    show_default=True,
+)
+@click.option(
+    "--show-details",
+    is_flag=True,
+    help="Show detailed sequence information for results",
+)
+def search_query(input_path, query_sequence, k, top_n, use_idf, skip_n, show_details):
+    """
+    Search for sequences similar to query.
+    
+    Uses k-mer-based TF-IDF vectorization and cosine similarity to find
+    the most similar sequences to the query.
+    
+    Example:
+        opengenome search query --input /data/sequences.parquet \\
+            --query "ATGCGATCGATCG..." --top 10
+    """
+    from opengenome.search import SequenceSearcher
+    from opengenome.spark.session import get_spark_session
+    from py4j.protocol import Py4JNetworkError
+    
+    try:
+        click.echo("=" * 60)
+        click.echo("Sequence Similarity Search")
+        click.echo("=" * 60)
+        
+        # Progress indicator
+        click.echo("\n[1/5] Connecting to Spark cluster...")
+        spark = get_spark_session(
+            app_name="opengenome-search-query",
+            master="spark://spark-master:7077"
+        )
+        
+        click.echo(f"[2/5] Initializing searcher (k={k})...")
+        searcher = SequenceSearcher(spark, k=k)
+        
+        click.echo("[3/5] Building index...")
+        click.echo(f"  Input: {input_path}")
+        searcher.build_index(input_path=input_path, skip_n=skip_n)
+        
+        click.echo(f"[4/5] Processing query...")
+        click.echo(f"  Query length: {len(query_sequence)} bases")
+        click.echo(f"  K-mer size: {k}")
+        click.echo(f"  Use IDF: {use_idf}")
+        click.echo(f"  Top N: {top_n}")
+        
+        results = searcher.search(
+            query_sequence=query_sequence,
+            top_n=top_n,
+            use_idf=use_idf,
+            skip_n=skip_n
+        )
+        
+        click.echo("[5/5] Retrieving results...")
+        results_list = results.collect()
+        
+        click.echo("\n" + "=" * 60)
+        click.echo(f"Top {len(results_list)} Similar Sequences:")
+        click.echo("=" * 60)
+        
+        if not results_list:
+            click.echo("No results found.")
+        else:
+            # Display results
+            for row in results_list:
+                click.echo(f"\n#{row['rank']}: {row['seq_id']}")
+                click.echo(f"  Similarity: {row['similarity']:.4f}")
+                
+                if show_details:
+                    # Load sequence details
+                    seq_df = spark.read.parquet(input_path)
+                    seq_info = seq_df.filter(seq_df.seq_id == row['seq_id']).first()
+                    if seq_info:
+                        click.echo(f"  Description: {seq_info['description'][:80]}...")
+                        click.echo(f"  Length: {seq_info['length']:,} bases")
+                        click.echo(f"  Source: {seq_info['source']}")
+        
+        click.echo("\n✓ Search complete!")
+        
+        stop_spark_session()
+    
+    except Py4JNetworkError:
+        click.echo("Error: Cannot connect to Spark master", err=True)
+        click.echo("Ensure the cluster is running: make up", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"Error: Search failed", err=True)
+        click.echo(f"Details: {type(e).__name__}: {e}", err=True)
+        logger.error("Search query failed", exc_info=True)
+        sys.exit(1)
+
+
 def main():
     """Main entry point with cleanup."""
     try:
