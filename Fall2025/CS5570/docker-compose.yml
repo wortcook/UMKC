@@ -137,7 +137,7 @@ services:
       - FLASK_ENV=production
       - FLASK_DEBUG=false
     ports:
-      - "5000:5000"  # Web UI
+      - "5002:5000"  # Web UI (host:5002 -> container:5000)
     volumes:
       - ./src:/opt/opengenome/src:ro
       - ./data:/data
