@@ -1,0 +1,112 @@
+==== Docker Version ====
+Docker version 28.5.1, build e180ab8
+Docker Compose version v2.40.0-desktop.1
+
+==== Container Status ====
+NAME                        IMAGE                   COMMAND                  SERVICE          CREATED          STATUS                    PORTS
+opengenome-spark-master     cs5570-spark-master     "/opt/entrypoint.sh …"   spark-master     46 seconds ago   Up 45 seconds (healthy)   0.0.0.0:8081->8080/tcp, [::]:8081->8080/tcp
+opengenome-spark-worker-1   cs5570-spark-worker-1   "/opt/entrypoint.sh …"   spark-worker-1   46 seconds ago   Up 45 seconds (healthy)   
+opengenome-spark-worker-2   cs5570-spark-worker-2   "/opt/entrypoint.sh …"   spark-worker-2   46 seconds ago   Up 45 seconds (healthy)   
+opengenome-web              cs5570-web              "python -m flask --a…"   web              46 seconds ago   Up 45 seconds (healthy)   0.0.0.0:5002->5000/tcp, [::]:5002->5000/tcp
+
+==== Checking if containers are running ====
+467b7077bc6f   cs5570-spark-worker-2   "/opt/entrypoint.sh …"   46 seconds ago   Up 45 seconds (healthy)                                                 opengenome-spark-worker-2
+bfcbdc966ae4   cs5570-web              "python -m flask --a…"   46 seconds ago   Up 45 seconds (healthy)   0.0.0.0:5002->5000/tcp, [::]:5002->5000/tcp   opengenome-web
+692f7a1ca904   cs5570-spark-worker-1   "/opt/entrypoint.sh …"   46 seconds ago   Up 45 seconds (healthy)                                                 opengenome-spark-worker-1
+8adcb4851d4d   cs5570-spark-master     "/opt/entrypoint.sh …"   46 seconds ago   Up 45 seconds (healthy)   0.0.0.0:8081->8080/tcp, [::]:8081->8080/tcp   opengenome-spark-master
+
+==== Checking py4j in master container ====
+py4j NOT FOUND
+
+==== Checking py4j in worker container ====
+py4j NOT FOUND
+
+==== Attempting to import py4j in master ====
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'py4j'
+
+==== Attempting to import py4j in worker ====
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'py4j'
+
+==== Testing opengenome CLI ====
+Traceback (most recent call last):
+  File "/opt/opengenome/src/opengenome/cli/main.py", line 17, in <module>
+    from opengenome import __version__
+  File "/opt/opengenome/src/opengenome/__init__.py", line 11, in <module>
+    from opengenome.spark.session import get_spark_session, stop_spark_session
+
+==== Checking Docker images ====
+cs5570-web              latest    23e18a917a65   About a minute ago   1.69GB
+cs5570-spark-master     latest    0de1f9f8b19e   About a minute ago   2.14GB
+cs5570-spark-worker-2   latest    532359fa331f   About a minute ago   1.88GB
+cs5570-spark-worker-1   latest    47ce102d773f   About a minute ago   1.88GB
+
+==== Checking when master image was built ====
+2025-12-04T07:07:13.410515708Z
+
+==== Checking Dockerfile for py4j ====
+docker/spark-master/Dockerfile:49:    PYTHONPATH=/opt/spark/python:/opt/spark/python/lib/py4j-*-src.zip:/opt/opengenome/src:$PYTHONPATH \
+
+==== All installed packages in master ====
+Package             Version
+------------------- -----------
+biopython           1.81
+certifi             2025.11.12
+charset-normalizer  3.4.4
+click               8.1.7
+contourpy           1.1.1
+coverage            7.6.1
+cycler              0.12.1
+exceptiongroup      1.3.1
+filelock            3.16.1
+fonttools           4.57.0
+fsspec              2025.3.0
+huggingface-hub     0.19.4
+idna                3.11
+importlib_resources 6.4.5
+iniconfig           2.1.0
+kiwisolver          1.4.7
+matplotlib          3.7.3
+numpy               1.24.3
+packaging           25.0
+pandas              2.0.3
+pillow              10.4.0
+pip                 23.3.1
+pluggy              1.5.0
+pyarrow             14.0.1
+pyparsing           3.1.4
+pytest              7.4.3
+pytest-cov          4.1.0
+python-dateutil     2.9.0.post0
+python-dotenv       1.0.0
+pytz                2025.2
+PyYAML              6.0.1
+requests            2.32.4
+seaborn             0.13.0
+setuptools          69.0.2
+six                 1.17.0
+tomli               2.3.0
+tqdm                4.67.1
+typing_extensions   4.13.2
+tzdata              2025.2
+urllib3             2.2.3
+wheel               0.42.0
+zipp                3.20.2
+
+[notice] A new release of pip is available: 23.3.1 -> 25.0.1
+[notice] To update, run: python3 -m pip install --upgrade pip
+
+==== Python version in master ====
+Python 3.8.10
+
+==== PySpark version in master ====
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/opt/spark/python/pyspark/__init__.py", line 58, in <module>
+    from pyspark.conf import SparkConf
+  File "/opt/spark/python/pyspark/conf.py", line 23, in <module>
+    from py4j.java_gateway import JVMView, JavaObject
+ModuleNotFoundError: No module named 'py4j'
