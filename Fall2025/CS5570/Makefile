@@ -134,7 +134,7 @@ spark-ui:
 # Open Web UI
 web-ui:
 	@echo "Opening OpenGenome2 Web UI..."
-	@open http://localhost:5000 || xdg-open http://localhost:5000 || echo "Please open http://localhost:5000 in your browser"
+	@open http://localhost:5002 || xdg-open http://localhost:5002 || echo "Please open http://localhost:5002 in your browser"
 
 # View web service logs
 logs-web:

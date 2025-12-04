@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Sequence Search - OpenGenome2{% endblock %}
+
+{% block content %}
+<h2>🔍 Sequence Pattern Search</h2>
+
+<div class="card">
+    <h3>Search Parameters</h3>
+    <form id="searchForm">
+        <div class="form-group">
+            <label for="pattern">DNA Sequence Pattern *</label>
+            <input 
+                type="text" 
+                id="pattern" 
+                name="pattern" 
+                placeholder="e.g., ACGACGACGGGGACG" 
+                required
+                pattern="[ACGTNacgtn]+"
+                title="Only DNA nucleotides (A, C, G, T, N) are allowed"
+            >
+            <small>Enter the DNA sequence pattern to search for</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="input_dir">Dataset Directory</label>
+            <input 
+                type="text" 
+                id="input_dir" 
+                name="input_dir" 
+                placeholder="organelles"
+                value="organelles"
+            >
+            <small>Directory name within /data containing the parquet files to search</small>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="case_sensitive" name="case_sensitive">
+                Case Sensitive Search
+            </label>
+            <small>Match pattern exactly (case-sensitive)</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="max_results">Maximum Results</label>
+            <input 
+                type="number" 
+                id="max_results" 
+                name="max_results" 
+                placeholder="Leave empty for all results"
+                min="1"
+            >
+            <small>Limit the number of results returned (optional)</small>
+        </div>
+        
+        <button type="submit" class="btn-primary">🔍 Search Sequences</button>
+    </form>
+</div>
+
+<div id="resultsCard" class="card" style="display: none;">
+    <h3>Search Results</h3>
+    <div id="searchResults"></div>
+</div>
+
+<div id="loadingCard" class="card" style="display: none;">
+    <h3>⏳ Searching...</h3>
+    <p>This may take a few moments depending on the dataset size.</p>
+    <div class="spinner"></div>
+</div>
+
+<style>
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+    }
+    
+    .form-group input[type="text"],
+    .form-group input[type="number"] {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .form-group input[type="checkbox"] {
+        margin-right: 8px;
+    }
+    
+    .form-group small {
+        display: block;
+        margin-top: 5px;
+        color: #666;
+        font-size: 13px;
+    }
+    
+    .result-stats {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+    
+    .result-stats p {
+        margin: 5px 0;
+    }
+    
+    .result-stats strong {
+        color: #2c3e50;
+    }
+    
+    .matches-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    
+    .matches-table th,
+    .matches-table td {
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .matches-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+    }
+    
+    .matches-table tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+<script>
+document.getElementById('searchForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const pattern = document.getElementById('pattern').value;
+    const input_dir = document.getElementById('input_dir').value || 'organelles';
+    const case_sensitive = document.getElementById('case_sensitive').checked;
+    const max_results = document.getElementById('max_results').value;
+    
+    // Validate pattern
+    if (!pattern || !/^[ACGTNacgtn]+$/.test(pattern)) {
+        alert('Please enter a valid DNA sequence (only A, C, G, T, N allowed)');
+        return;
+    }
+    
+    // Show loading, hide results
+    document.getElementById('loadingCard').style.display = 'block';
+    document.getElementById('resultsCard').style.display = 'none';
+    
+    try {
+        const response = await fetch('/api/analyze/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                pattern: pattern,
+                input_dir: input_dir,
+                case_sensitive: case_sensitive,
+                max_results: max_results ? parseInt(max_results) : null
+            })
+        });
+        
+        const data = await response.json();
+        
+        // Hide loading
+        document.getElementById('loadingCard').style.display = 'none';
+        
+        if (data.status === 'error') {
+            alert('Search failed: ' + data.message);
+            return;
+        }
+        
+        // Display results
+        displayResults(data.result);
+        
+    } catch (error) {
+        document.getElementById('loadingCard').style.display = 'none';
+        alert('Search failed: ' + error.message);
+    }
+});
+
+function displayResults(result) {
+    const resultsDiv = document.getElementById('searchResults');
+    
+    let html = `
+        <div class="result-stats">
+            <p><strong>Pattern:</strong> ${result.pattern} (${result.pattern_length} bp)</p>
+            <p><strong>Total Sequences Searched:</strong> ${result.total_sequences_searched.toLocaleString()}</p>
+            <p><strong>Matching Sequences:</strong> ${result.matching_sequences.toLocaleString()} (${result.match_percentage}%)</p>
+            <p><strong>Case Sensitive:</strong> ${result.case_sensitive ? 'Yes' : 'No'}</p>
+            ${result.output_path ? `<p><strong>Results saved to:</strong> ${result.output_path}</p>` : ''}
+        </div>
+    `;
+    
+    if (result.sample_matches && result.sample_matches.length > 0) {
+        html += `
+            <h4>Top Matching Sequences</h4>
+            <table class="matches-table">
+                <thead>
+                    <tr>
+                        <th>Sequence ID</th>
+                        <th>Description</th>
+                        <th>Match Count</th>
+                        <th>First Position</th>
+                        <th>Coverage</th>
+                        <th>Length</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        result.sample_matches.forEach(match => {
+            html += `
+                <tr>
+                    <td>${match.sequence_id || 'N/A'}</td>
+                    <td>${match.description || 'N/A'}</td>
+                    <td>${match.match_count.toLocaleString()}</td>
+                    <td>${match.match_position}</td>
+                    <td>${match.pattern_coverage.toFixed(2)}%</td>
+                    <td>${match.sequence_length.toLocaleString()} bp</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                </tbody>
+            </table>
+        `;
+    } else {
+        html += `<p><em>No matches found for this pattern.</em></p>`;
+    }
+    
+    resultsDiv.innerHTML = html;
+    document.getElementById('resultsCard').style.display = 'block';
+    
+    // Scroll to results
+    document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+{% endblock %}

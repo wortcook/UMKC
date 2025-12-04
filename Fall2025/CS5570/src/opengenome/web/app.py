@@ -48,6 +48,12 @@ def results():
     return render_template('results.html')
 
 
+@app.route('/search')
+def search():
+    """Sequence search page"""
+    return render_template('search.html')
+
+
 # ==================== API Endpoints ====================
 
 @app.route('/api/health', methods=['GET'])
@@ -233,6 +239,55 @@ def api_datasets():
         
     except Exception as e:
         logger.error(f"Failed to list datasets: {str(e)}", exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/analyze/search', methods=['POST'])
+def api_analyze_search():
+    """Search for sequences containing a specific pattern"""
+    try:
+        # Lazy import to avoid Spark initialization at startup
+        from opengenome.analysis.sequence_search import SequenceSearcher
+        from opengenome.spark.session import get_spark_session
+        from datetime import datetime
+        
+        data = request.json
+        pattern = data.get('pattern')
+        if not pattern:
+            return jsonify({'status': 'error', 'message': 'Pattern is required'}), 400
+        
+        input_dir = DATA_DIR / data.get('input_dir', 'organelles')
+        case_sensitive = data.get('case_sensitive', False)
+        max_results = data.get('max_results')
+        if max_results:
+            max_results = int(max_results)
+        
+        # Create timestamped output path
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = RESULTS_DIR / 'search' / f"search_{timestamp}.parquet"
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        logger.info(f"Starting sequence search: pattern={pattern}, input={input_dir}")
+        
+        spark = get_spark_session(app_name="WebSequenceSearch")
+        searcher = SequenceSearcher(spark)
+        try:
+            result = searcher.search(
+                input_path=str(input_dir),
+                pattern=pattern,
+                output_path=str(output_path),
+                case_sensitive=case_sensitive,
+                max_results=max_results
+            )
+            
+            logger.info(f"Search completed: {result}")
+            return jsonify({'status': 'success', 'result': result})
+        finally:
+            # Note: Not stopping spark session as it's managed by the web app lifecycle
+            pass
+        
+    except Exception as e:
+        logger.error(f"Sequence search failed: {str(e)}", exc_info=True)
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 

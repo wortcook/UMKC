@@ -720,6 +720,114 @@ def analyze_codon(ctx, input, output, frame, skip_n, skip_stops, min_count, rscu
         sys.exit(1)
 
 
+@analyze.command("search")
+@click.option(
+    "--input",
+    type=click.Path(exists=False),
+    default="/data/parquet/organelle/*.parquet",
+    help="Input Parquet file pattern"
+)
+@click.option(
+    "--output",
+    type=click.Path(),
+    default="/results/search",
+    help="Output directory for results"
+)
+@click.option(
+    "--pattern",
+    type=str,
+    required=True,
+    help="DNA sequence pattern to search for (e.g., ACGACGACGGGGACG)"
+)
+@click.option(
+    "--case-sensitive",
+    is_flag=True,
+    help="Perform case-sensitive search"
+)
+@click.option(
+    "--max-results",
+    type=int,
+    default=None,
+    help="Maximum number of results to return (default: all)"
+)
+@click.pass_context
+def search_sequences(ctx, input, output, pattern, case_sensitive, max_results):
+    """Search for sequences containing a specific pattern."""
+    from opengenome.spark.session import get_spark_session, stop_spark_session
+    from opengenome.analysis.sequence_search import SequenceSearcher
+    from datetime import datetime
+    
+    try:
+        click.echo()
+        click.echo(" " * 20 + "Sequence Pattern Search")
+        click.echo("=" * 60)
+        click.echo()
+        
+        # Initialize Spark
+        click.echo("[1/3] Initializing Spark session...")
+        spark = get_spark_session(
+            app_name="SequenceSearch",
+            master=None  # Uses SPARK_MASTER from env
+        )
+        
+        # Initialize searcher
+        click.echo(f"[2/3] Searching for pattern in {input}")
+        searcher = SequenceSearcher(spark)
+        
+        # Display search parameters
+        click.echo(f"\n  Parameters:")
+        click.echo(f"    Pattern: {pattern}")
+        click.echo(f"    Pattern length: {len(pattern)}")
+        click.echo(f"    Case sensitive: {case_sensitive}")
+        if max_results:
+            click.echo(f"    Max results: {max_results:,}")
+        
+        # Create timestamped output path
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_file = f"{output}/search_{timestamp}.parquet"
+        
+        # Run search
+        click.echo(f"\n[3/3] Running distributed pattern search...")
+        results = searcher.search(
+            input_path=input,
+            pattern=pattern,
+            output_path=output_file,
+            case_sensitive=case_sensitive,
+            max_results=max_results
+        )
+        
+        # Display results
+        click.echo("\nResults:")
+        click.echo("=" * 60)
+        click.echo(f"  Total sequences searched: {results['total_sequences_searched']:,}")
+        click.echo(f"  Matching sequences: {results['matching_sequences']:,}")
+        click.echo(f"  Match percentage: {results['match_percentage']:.2f}%")
+        
+        if results['sample_matches']:
+            click.echo(f"\n  Top matches:")
+            click.echo(f"  {'Sequence ID':<20}{'Matches':>10}{'Coverage':>12}{'Length':>12}")
+            click.echo("  " + "-" * 54)
+            
+            for match in results['sample_matches'][:10]:
+                click.echo(
+                    f"  {match['sequence_id']:<20}"
+                    f"{match['match_count']:>10,}"
+                    f"{match['pattern_coverage']:>11.2f}%"
+                    f"{match['sequence_length']:>12,}"
+                )
+        
+        click.echo("\n" + "=" * 60)
+        click.echo(f"Results saved to: {output_file}")
+        click.echo("=" * 60)
+        
+    except Exception as e:
+        click.echo(f"\n✗ Sequence search failed: {e}", err=True)
+        if ctx.obj.get("DEBUG"):
+            import traceback
+            click.echo("\n" + traceback.format_exc(), err=True)
+        sys.exit(1)
+
+
 @cli.group()
 def visualize():
     """Visualization commands."""

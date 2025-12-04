@@ -44,7 +44,7 @@ make validate
 
 ### Access Interfaces
 
-- **Web UI**: http://localhost:5000 - User-friendly interface for all operations
+- **Web UI**: http://localhost:5002 - User-friendly interface for all operations
 - **Spark UI**: http://localhost:8081 - Spark Master dashboard
 
 ## Architecture
@@ -106,7 +106,7 @@ make clean
 **Option 1: Web UI (Recommended)**
 
 ```bash
-make web-ui  # Opens http://localhost:5000
+make web-ui  # Opens http://localhost:5002
 ```
 
 Navigate through the intuitive interface:
