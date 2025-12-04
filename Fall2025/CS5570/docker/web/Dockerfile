@@ -6,10 +6,14 @@ LABEL description="OpenGenome2 Web UI"
 # Set working directory
 WORKDIR /opt/opengenome
 
-# Install system dependencies
+# Install system dependencies including Java for PySpark
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    default-jre-headless \
     && rm -rf /var/lib/apt/lists/*
+
+# Set JAVA_HOME for PySpark (auto-detect)
+ENV JAVA_HOME=/usr/lib/jvm/default-java
 
 # Copy requirements from docker/web directory
 COPY docker/web/requirements.txt .

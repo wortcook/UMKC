@@ -217,9 +217,12 @@ class SequenceSearcher:
             matches.write.mode('overwrite').parquet(output_path)
             logger.info(f"Results saved to {output_path}")
         
+        # Determine ID column name (handle both schemas)
+        id_col = "seq_id" if "seq_id" in matches.columns else "sequence_id"
+        
         # Collect sample results for preview
         select_cols = [
-            "sequence_id",
+            id_col,
             "description", 
             "match_count",
             "match_position",
@@ -236,7 +239,7 @@ class SequenceSearcher:
         sample_matches = []
         for row in sample_results:
             match_dict = {
-                'sequence_id': row.sequence_id,
+                'sequence_id': getattr(row, id_col),
                 'description': row.description,
                 'match_count': row.match_count,
                 'match_position': row.match_position,
