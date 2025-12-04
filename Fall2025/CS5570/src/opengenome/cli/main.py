@@ -361,11 +361,6 @@ def ingest_local(ctx, input_path, output, source_name, chunk_size, compression, 
             --append
     """
     from opengenome.ingestion import FASTAToParquetConverter
-            --output /data/parquet/bacteria \\
-            --source-name bacteria \\
-            --max-sequences 1000
-    """
-    from opengenome.ingestion import FASTAToParquetConverter
     
     try:
         input_file = Path(input_path)
@@ -387,14 +382,21 @@ def ingest_local(ctx, input_path, output, source_name, chunk_size, compression, 
         valid_extensions = ['.fasta', '.fa', '.fna', '.ffn', '.faa', '.frn', '.gz']
         if not any(str(input_file).endswith(ext) for ext in valid_extensions):
             click.echo(f"\n⚠️  Warning: File extension not recognized as FASTA", err=True)
+        
         click.echo(f"  Output: {output}")
         if max_sequences:
             click.echo(f"  Max sequences: {max_sequences:,} (testing mode)")
         if append:
             click.echo(f"  Mode: APPEND (will continue from existing shards)")
         
-        converter = FASTAToParquetConverter(e
+        file_size = input_file.stat().st_size
         click.echo(f"  File size: {file_size:,} bytes ({file_size / (1024**2):.2f} MB)")
+        
+        # Create converter
+        converter = FASTAToParquetConverter(
+            chunk_rows=chunk_size,
+            compression=compression
+        )
         
         # Convert to Parquet
         stats = converter.convert(
@@ -403,21 +405,6 @@ def ingest_local(ctx, input_path, output, source_name, chunk_size, compression, 
             output_subdir=Path(output).name,
             max_sequences=max_sequences,
             append=append
-        )   click.echo(f"  Max sequences: {max_sequences:,} (testing mode)")
-        
-        converter = FASTAToParquetConverter(
-            chunk_rows=chunk_size,
-            compression=compression,
-        click.echo(f"  Total sequences: {stats['total_sequences']:,}")
-        click.echo(f"  Total bases: {stats['total_bases']:,}")
-        click.echo(f"  Avg sequence length: {stats['total_bases'] // stats['total_sequences']:,}")
-        click.echo(f"  Parquet shards: {stats['total_shards']}")
-        if append and stats.get('starting_shard', 0) > 0:
-            click.echo(f"  Shard range: {stats['starting_shard']} to {stats['ending_shard']}")
-        click.echo(f"  Output path: {stats['output_path']}")
-            source_name=source_name,
-            output_subdir=Path(output).name,
-            max_sequences=max_sequences
         )
         
         # Display results
