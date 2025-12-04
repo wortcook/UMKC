@@ -26,6 +26,28 @@ OpenGenome2 is a distributed genomic analysis platform that processes large FAST
 
 ### Installation
 
+#### Option 1: Automated Setup (Recommended for Clean Systems)
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd CS5570
+
+# Run automated setup script
+# This ensures all dependencies (including py4j) are properly installed
+./setup_clean_system.sh
+```
+
+The setup script will:
+- Create `.env` from `.env.example`
+- Clean up any old containers/images
+- Build fresh Docker images with all dependencies
+- Start the cluster
+- Verify py4j and other dependencies are installed
+- Test the CLI
+
+#### Option 2: Manual Setup
+
 ```bash
 # Clone repository
 git clone <repository-url>
@@ -34,13 +56,18 @@ cd CS5570
 # Copy environment configuration
 cp .env.example .env
 
-# Build and start services
-make build
-make up
+# Build and start services (use --build to force rebuild)
+docker-compose down
+docker-compose up -d --build
+
+# Wait for cluster to be ready
+sleep 30
 
 # Validate cluster
-make validate
+./opengenome --help
 ```
+
+**Important**: If you see "No module named py4j", run `./setup_clean_system.sh` to rebuild images.
 
 ### Access Interfaces
 
