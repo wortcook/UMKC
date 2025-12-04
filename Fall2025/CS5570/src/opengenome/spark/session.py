@@ -73,6 +73,14 @@ def get_spark_session(
     spark_conf.set("spark.driver.memory", driver_memory)
     spark_conf.set("spark.executor.memory", executor_memory)
     
+    # Memory overhead to prevent OOM (20% overhead)
+    spark_conf.set("spark.executor.memoryOverhead", "512m")
+    spark_conf.set("spark.driver.memoryOverhead", "512m")
+    
+    # Memory fraction for execution/storage (conservative settings)
+    spark_conf.set("spark.memory.fraction", "0.6")
+    spark_conf.set("spark.memory.storageFraction", "0.3")
+    
     # Performance tuning
     if os.environ.get("ENABLE_ADAPTIVE_EXECUTION", "true").lower() == "true":
         spark_conf.set("spark.sql.adaptive.enabled", "true")

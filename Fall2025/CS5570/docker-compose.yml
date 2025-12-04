@@ -55,7 +55,7 @@ services:
       dockerfile: Dockerfile
     container_name: opengenome-spark-worker-1
     hostname: spark-worker-1
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --memory 6g --cores 4
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --memory 4g --cores 2
     depends_on:
       - spark-master
     environment:
@@ -93,7 +93,7 @@ services:
       dockerfile: Dockerfile
     container_name: opengenome-spark-worker-2
     hostname: spark-worker-2
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --memory 6g --cores 4
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --memory 4g --cores 2
     depends_on:
       - spark-master
     environment:
