@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y \
 # Version constraints: pandas 2.0.3 (Python 3.8 compatible)
 # Combining into single RUN reduces image layers
 RUN pip3 install --no-cache-dir \
+    # PySpark integration (required for CLI)
+    py4j==0.10.9.7 \
     # Genomics
     biopython==1.81 \
     # Data processing
@@ -37,7 +39,9 @@ RUN pip3 install --no-cache-dir \
     pytest==7.4.3 \
     pytest-cov==4.1.0 \
     # HuggingFace model hub
-    huggingface-hub==0.19.4
+    huggingface-hub==0.19.4 \
+    # Verify py4j installation - build will fail if not installed
+    && python3 -c "import py4j; print(f'✓ py4j {py4j.__version__} installed')"
 
 # Create application directory
 RUN mkdir -p /opt/opengenome
