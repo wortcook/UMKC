@@ -22,50 +22,153 @@ echo -e "${BLUE}OpenGenome2 End-to-End Demonstration${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-# Step 1: Load organelle dataset (already exists, verify)
+# Step 1: Load organelle dataset (verify or ingest if missing)
 echo -e "${GREEN}[Step 1/7] Verifying organelle dataset...${NC}"
 if [ -d "data/parquet/organelle" ]; then
     ORGANELLE_COUNT=$(find data/parquet/organelle -name "*.parquet" | wc -l)
     echo "✓ Organelle dataset found ($ORGANELLE_COUNT parquet files)"
 else
-    echo -e "${RED}✗ Organelle dataset not found. Please run ingestion first.${NC}"
+    echo -e "${YELLOW}⚠ Organelle dataset not found. Ingesting from HuggingFace...${NC}"
+    
+    # Download organelle FASTA if not present
+    ORGANELLE_URL="https://huggingface.co/datasets/arcinstitute/opengenome2/resolve/main/fasta/organelle/organelle.fasta.gz"
+    ORGANELLE_FILE="data/downloads/organelle.fasta.gz"
+    
+    mkdir -p data/downloads
+    
+    if [ ! -f "$ORGANELLE_FILE" ]; then
+        echo "Downloading organelle.fasta.gz from HuggingFace..."
+        curl -L --progress-bar "$ORGANELLE_URL" -o "$ORGANELLE_FILE"
+        echo "✓ Download complete"
+    else
+        echo "✓ File already exists: $ORGANELLE_FILE"
+    fi
+    
+    # Ingest to Parquet
+    echo "Converting organelle.fasta.gz to Parquet format..."
+    ./opengenome ingest local \
+        --input "/data/downloads/organelle.fasta.gz" \
+        --output /data/parquet/organelle \
+        --source-name organelle \
+        --chunk-size 1000
+    
+    if [ -d "data/parquet/organelle" ]; then
+        ORGANELLE_COUNT=$(find data/parquet/organelle -name "*.parquet" | wc -l)
+        echo "✓ Organelle dataset ingested ($ORGANELLE_COUNT parquet files)"
+    else
+        echo -e "${RED}✗ Organelle ingestion failed${NC}"
+        exit 1
+    fi
+fi
+echo ""
+
+# Step 2: Download and display plasmids/phage dataset
+echo -e "${GREEN}[Step 2/7] Downloading plasmids/phage dataset...${NC}"
+FASTA_URL="https://huggingface.co/datasets/arcinstitute/opengenome2/resolve/main/fasta/plasmids_phage/imgpr.fasta.gz"
+FASTA_FILE="data/downloads/imgpr.fasta.gz"
+
+# Create downloads directory
+mkdir -p data/downloads
+
+# Download if not already present
+if [ ! -f "$FASTA_FILE" ]; then
+    echo "Downloading imgpr.fasta.gz from HuggingFace..."
+    echo "Source: $FASTA_URL"
+    curl -L --progress-bar "$FASTA_URL" -o "$FASTA_FILE"
+    echo "✓ Download complete"
+else
+    echo "✓ File already exists: $FASTA_FILE"
+fi
+
+# Show file info
+FILE_SIZE=$(du -h "$FASTA_FILE" | cut -f1)
+echo ""
+echo "Downloaded file information:"
+echo "  Location: $FASTA_FILE"
+echo "  Size: $FILE_SIZE"
+echo ""
+
+# Preview the file content
+echo "File preview (first 5 sequences):"
+gunzip -c "$FASTA_FILE" | head -20 | sed 's/^/  /'
+echo ""
+echo "✓ Dataset ready for analysis"
+echo ""
+
+# Step 3: K-mer and Codon analysis
+echo -e "${GREEN}[Step 3/7] Ingesting plasmids/phage data to Parquet...${NC}"
+echo ""
+echo "Converting imgpr.fasta.gz to Parquet format..."
+./opengenome ingest local \
+    --input "/data/downloads/imgpr.fasta.gz" \
+    --output /data/parquet/plasmids_phage \
+    --source-name plasmids_phage \
+    --chunk-size 1000
+
+if [ -d "data/parquet/plasmids_phage" ]; then
+    echo ""
+    echo "✓ Data ingestion complete!"
+    echo "  Output: data/parquet/plasmids_phage/"
+    ls -lh data/parquet/plasmids_phage/
+else
+    echo "✗ Data ingestion failed - directory not created"
     exit 1
 fi
 echo ""
 
-# Step 2: Verify dataset is ready for analysis
-echo -e "${GREEN}[Step 2/7] Verifying dataset for analysis...${NC}"
-echo "Using organelle dataset for demonstration"
-echo "✓ Dataset verified and ready"
-echo ""
-echo -e "${YELLOW}Note: To add plasmids/phage data, download from:${NC}"
-echo "  https://huggingface.co/datasets/arcinstitute/opengenome2"
+# Step 4: K-mer analysis
+echo -e "${GREEN}[Step 4/7] Running k-mer analysis (k=8, 16, 32)...${NC}"
 echo ""
 
-# Step 3: K-mer and Codon analysis
-echo -e "${GREEN}[Step 3/7] Running analyses via Python...${NC}"
+for k in 8 16 32; do
+    echo "[K-mer Analysis] k=$k"
+    ./opengenome analyze kmer \
+        --input /data/parquet/plasmids_phage \
+        --output /data/results/demo/kmer_${k} \
+        --k $k \
+        --top 100
+    
+    if [ -f "data/results/demo/kmer_${k}/kmer_frequencies.parquet" ]; then
+        # Show top 5 k-mers
+        echo "  Top 5 k-mers:"
+        python3 -c "
+import pandas as pd
+df = pd.read_parquet('data/results/demo/kmer_${k}/kmer_frequencies.parquet')
+print(df.head(5).to_string(index=False))
+        "
+        echo ""
+    fi
+done
 
-echo "Note: K-mer and codon analysis require Spark cluster access."
-echo "These features are available through the web UI at http://localhost:5002"
-echo ""
-echo "Skipping automated k-mer/codon analysis (CLI requires container fixes)"
-echo "✓ Analysis step acknowledged"
+echo "✓ K-mer analysis complete for all k values"
 echo ""
 
-# Step 4: Placeholder for future visualization
-echo -e "${GREEN}[Step 4/7] Visualization generation...${NC}"
-echo "Visualizations would be generated from k-mer/codon analysis results"
-echo "✓ Visualization step acknowledged"
+# Step 5: Codon analysis
+echo -e "${GREEN}[Step 5/7] Running codon analysis...${NC}"
 echo ""
 
-# Step 5: Generate visualizations (skipped - no data)
-echo -e "${GREEN}[Step 5/7] Generating visualizations...${NC}"
-echo "Skipping visualization generation (no analysis data available)"
-echo "✓ Step complete"
+./opengenome analyze codon \
+    --input /data/parquet/plasmids_phage \
+    --output /data/results/demo/codon_analysis \
+    --top 100
+
+if [ -f "data/results/demo/codon_analysis/codon_frequencies.parquet" ]; then
+    echo "  Top 10 codons:"
+    python3 -c "
+import pandas as pd
+df = pd.read_parquet('data/results/demo/codon_analysis/codon_frequencies.parquet')
+print(df.head(10).to_string(index=False))
+    "
+    echo ""
+fi
+
+echo "✓ Codon analysis complete"
 echo ""
 
-# OLD visualization code commented out:
-: << 'VISUALIZATION_CODE'
+# Step 6: Generate visualizations
+echo -e "${GREEN}[Step 6/7] Generating visualizations...${NC}"
+echo ""
+
 # Create a Python script for visualization
 cat > /tmp/generate_visualizations.py << 'PYEOF'
 import pandas as pd
@@ -79,7 +182,7 @@ sns.set_theme(style="whitegrid")
 plt.rcParams['figure.figsize'] = (12, 6)
 
 # Output directory
-output_dir = Path("results/demo/visualizations")
+output_dir = Path("data/results/demo/visualizations")
 output_dir.mkdir(parents=True, exist_ok=True)
 
 print("Generating visualizations...")
@@ -87,7 +190,7 @@ print("Generating visualizations...")
 # 1. K-mer visualizations
 for k in [8, 16, 32]:
     print(f"  - K-mer k={k} visualization...")
-    kmer_file = f"results/demo/kmer_{k}/kmer_frequencies.parquet"
+    kmer_file = f"data/results/demo/kmer_{k}/kmer_frequencies.parquet"
     
     if Path(kmer_file).exists():
         df = pd.read_parquet(kmer_file)
@@ -112,7 +215,7 @@ for k in [8, 16, 32]:
 
 # 2. Codon visualization
 print("  - Codon frequency visualization...")
-codon_file = "results/demo/codon_analysis/codon_frequencies.parquet"
+codon_file = "data/results/demo/codon_analysis/codon_frequencies.parquet"
 
 if Path(codon_file).exists():
     df = pd.read_parquet(codon_file)
@@ -142,7 +245,7 @@ print("  - K-mer distribution comparison...")
 fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
 for idx, k in enumerate([8, 16, 32]):
-    kmer_file = f"results/demo/kmer_{k}/kmer_frequencies.parquet"
+    kmer_file = f"data/results/demo/kmer_{k}/kmer_frequencies.parquet"
     
     if Path(kmer_file).exists():
         df = pd.read_parquet(kmer_file)
@@ -167,42 +270,47 @@ PYEOF
 
 # Run the visualization script
 python3 /tmp/generate_visualizations.py
-VISUALIZATION_CODE
 
-# Visualization code end
+echo ""
+echo "✓ Visualizations generated"
 echo ""
 
-# Step 6: Sequence searches (via Web API)
-echo -e "${GREEN}[Step 6/7] Running sequence searches via Web API...${NC}"
-
-mkdir -p results/demo/searches
-
-# Search for AAAA
-echo "  - Searching for pattern: AAAA..."
-curl -s -X POST http://localhost:5002/api/analyze/search \
-  -H "Content-Type: application/json" \
-  -d '{"pattern": "AAAA", "input_dir": "/data/parquet/organelle", "case_sensitive": false, "reverse_complement": false, "max_results": 10}' \
-  > results/demo/searches/search_AAAA.json
-
-# Search for ACGT
-echo "  - Searching for pattern: ACGT..."
-curl -s -X POST http://localhost:5002/api/analyze/search \
-  -H "Content-Type: application/json" \
-  -d '{"pattern": "ACGT", "input_dir": "/data/parquet/organelle", "case_sensitive": false, "reverse_complement": false, "max_results": 10}' \
-  > results/demo/searches/search_ACGT.json
-
-# Search for GGGGGGGG
-echo "  - Searching for pattern: GGGGGGGG..."
-curl -s -X POST http://localhost:5002/api/analyze/search \
-  -H "Content-Type: application/json" \
-  -d '{"pattern": "GGGGGGGG", "input_dir": "/data/parquet/organelle", "case_sensitive": false, "reverse_complement": true, "max_results": 10}' \
-  > results/demo/searches/search_GGGGGGGG.json
-
-echo "✓ Sequence searches complete"
+# Step 7: Sequence searches (using CLI)
+echo -e "${GREEN}[Step 7/7] Running sequence searches using CLI...${NC}"
 echo ""
 
-# Step 7: Generate summary report
-echo -e "${GREEN}[Step 7/7] Generating summary report...${NC}"
+mkdir -p data/results/demo/searches
+
+# Search 1: AAAA (simple homopolymer)
+echo "[Search 1/3] Searching for pattern: AAAA (homopolymer)"
+./opengenome analyze search \
+    --pattern AAAA \
+    --input /data/parquet/plasmids_phage \
+    --max-results 5
+echo ""
+
+# Search 2: ACGT (all four bases)
+echo "[Search 2/3] Searching for pattern: ACGT (all four bases)"
+./opengenome analyze search \
+    --pattern ACGT \
+    --input /data/parquet/plasmids_phage \
+    --max-results 5
+echo ""
+
+# Search 3: GGGGGGGG (long homopolymer with reverse complement)
+echo "[Search 3/3] Searching for pattern: GGGGGGGG (G-run with reverse complement)"
+./opengenome analyze search \
+    --pattern GGGGGGGG \
+    --input /data/parquet/plasmids_phage \
+    --reverse-complement \
+    --max-results 5
+echo ""
+
+echo "✓ All sequence searches complete"
+echo ""
+
+# Generate summary report
+echo -e "${GREEN}[Summary] Generating demo report...${NC}"
 
 cat > results/demo/DEMO_SUMMARY.md << 'EOF'
 # OpenGenome2 End-to-End Demonstration Summary
@@ -210,98 +318,145 @@ cat > results/demo/DEMO_SUMMARY.md << 'EOF'
 **Date:** $(date +"%Y-%m-%d %H:%M:%S")
 
 ## Overview
-This demonstration showcases the OpenGenome2 sequence search functionality using the Web API.
+This demonstration showcases the complete OpenGenome2 workflow using CLI commands:
+1. Data ingestion from FASTA to Parquet
+2. K-mer frequency analysis (k=8, 16, 32)
+3. Codon usage analysis
+4. Visualization generation
+5. Sequence pattern searches
 
 ---
 
-## 1. Dataset
+## 1. Datasets
 
-### Data Used:
-- **Organelle Dataset**: Pre-loaded sequences in Parquet format
-  - Location: `data/parquet/organelle/`
-  - Format: Parquet (optimized for Spark)
-  - Contains: ~10,000 sequences
+### Organelle Dataset (Pre-loaded)
+- **Location**: `data/parquet/organelle/`
+- **Format**: Parquet (optimized for Spark)
+- **Contains**: ~10,000 mitochondrial/chloroplast sequences
 
-**Note**: Additional datasets can be added by downloading from:
-- https://huggingface.co/datasets/arcinstitute/opengenome2
-
----
-
-## 2. Analysis Capabilities
-
-The OpenGenome2 system supports:
-
-### K-mer Analysis (via Web UI)
-- Available at: http://localhost:5002/analyze
-- Supports k values from 3 to 32
-- Generates frequency distributions
-- Identifies over-represented patterns
-
-### Codon Analysis (via Web UI)
-- Available at: http://localhost:5002/analyze
-- Analyzes codon usage bias
-- Identifies start/stop codons
-- Useful for gene prediction
-
-**Note**: Automated CLI for k-mer/codon analysis is available but requires
-container environment configuration. Use the Web UI for interactive analysis.
+### Plasmids/Phage Dataset (Downloaded & Ingested)
+- **Source**: https://huggingface.co/datasets/arcinstitute/opengenome2
+- **File**: imgpr.fasta.gz (1.6 GB)
+- **Output**: `data/parquet/plasmids_phage/`
+- **Contains**: Plasmid and bacteriophage sequences
 
 ---
 
-## 3. Sequence Pattern Search
+## 2. K-mer Analysis
 
-### Search Results:
+Performed k-mer frequency analysis with three different k values:
+
+### K=8 (Octamers)
+- **Output**: `results/demo/kmer_8/kmer_frequencies.parquet`
+- **Top 100 k-mers** saved
+- Useful for short motif discovery
+
+### K=16 (16-mers)
+- **Output**: `results/demo/kmer_16/kmer_frequencies.parquet`
+- **Top 100 k-mers** saved
+- Balanced between specificity and frequency
+
+### K=32 (32-mers)
+- **Output**: `results/demo/kmer_32/kmer_frequencies.parquet`
+- **Top 100 k-mers** saved
+- Highly specific, useful for unique sequence identification
+
+---
+
+## 3. Codon Usage Analysis
+
+- **Output**: `results/demo/codon_analysis/codon_frequencies.parquet`
+- **Top 100 codons** analyzed
+- Identifies codon usage bias across the organelle dataset
+- Highlights start (ATG) and stop (TAA, TAG, TGA) codons
+
+---
+
+## 4. Visualizations
+
+Generated visualizations from analysis results:
+
+### K-mer Frequency Charts
+- `results/demo/visualizations/kmer_8_frequency.png`
+- `results/demo/visualizations/kmer_16_frequency.png`
+- `results/demo/visualizations/kmer_32_frequency.png`
+
+### Codon Frequency Chart
+- `results/demo/visualizations/codon_frequency.png`
+- Color-coded: Green=Start, Red=Stop, Blue=Standard
+
+### K-mer Comparison
+- `results/demo/visualizations/kmer_comparison.png`
+- Side-by-side comparison of top k-mers across k values
+
+---
+
+## 5. Sequence Pattern Search
+
+Performed CLI-based searches on organelle dataset:
 
 #### Pattern: AAAA
-- **Output**: `results/demo/searches/search_AAAA.json`
-- **Results**: Top 10 sequences containing AAAA
-- Homopolymer run - common in genomic sequences
+- Simple A-homopolymer (common in AT-rich regions)
+- **Max Results**: 5 sequences
 
 #### Pattern: ACGT
-- **Output**: `results/demo/searches/search_ACGT.json`
-- **Results**: Top 10 sequences containing ACGT
-- All four bases - interesting for GC content analysis
+- All four bases present
+- **Max Results**: 5 sequences
 
 #### Pattern: GGGGGGGG
-- **Output**: `results/demo/searches/search_GGGGGGGG.json`
-- **Results**: Top 10 sequences containing GGGGGGGG
+- Long G-homopolymer (8 bases)
 - **Mode**: Reverse complement search enabled
-- Long G-homopolymer - potentially indicates G-quadruplex forming regions
+- Potentially indicates G-quadruplex forming regions
+- **Max Results**: 5 sequences
 
 ---
 
-## 4. Output Files
+## 6. Output Files
 
 ```
+data/parquet/
+├── organelle/          # Pre-loaded mitochondrial/chloroplast sequences
+└── plasmids_phage/     # Downloaded and ingested plasmid/phage sequences
+
 results/demo/
-└── searches/
-    ├── search_AAAA.json
-    ├── search_ACGT.json
-    ├── search_GGGGGGGG.json
-    └── DEMO_SUMMARY.md (this file)
+├── kmer_8/
+│   └── kmer_frequencies.parquet
+├── kmer_16/
+│   └── kmer_frequencies.parquet
+├── kmer_32/
+│   └── kmer_frequencies.parquet
+├── codon_analysis/
+│   └── codon_frequencies.parquet
+├── visualizations/
+│   ├── kmer_8_frequency.png
+│   ├── kmer_16_frequency.png
+│   ├── kmer_32_frequency.png
+│   ├── codon_frequency.png
+│   └── kmer_comparison.png
+└── DEMO_SUMMARY.md (this file)
 ```
 
 ---
 
-## 5. Web UI Access
+## 7. Web UI Access
 
 View and analyze interactively at: **http://localhost:5002**
 
 - **Search Tab**: Perform custom sequence pattern searches
-- **Analyze Tab**: Run k-mer or codon analyses (interactive)
+- **Analyze Tab**: Run additional k-mer or codon analyses
 - **Results Tab**: Browse all analysis results
 
 ---
 
-## 6. Next Steps
+## 8. Next Steps
 
-- Use Web UI to run k-mer analysis (k=8, 16, 32)
-- Perform codon analysis through the interface
 - Search for specific biological motifs:
   - Restriction sites (e.g., EcoRI: GAATTC)
   - Promoter sequences (e.g., TATA box: TATAAA)
   - Start/stop codons (ATG, TAA, TAG, TGA)
-- Export results for external analysis tools
+- Analyze the plasmids_phage dataset with custom k values
+- Compare k-mer distributions between organelle and plasmid datasets
+- Export results for external tools (R, Jupyter notebooks)
 
 ---
 
@@ -321,18 +476,32 @@ echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}Demonstration Complete!${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
-echo -e "${GREEN}Results Summary:${NC}"
-echo "  • Dataset: Organelle sequences"
-echo "  • Sequence searches: AAAA, ACGT, GGGGGGGG (via Web API)"
-echo "  • K-mer/Codon analysis: Available via Web UI"
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}Results Summary${NC}"
+echo -e "${GREEN}========================================${NC}"
 echo ""
-echo -e "${YELLOW}Output Locations:${NC}"
+echo "📊 Datasets Processed:"
+echo "  ✓ Organelle sequences (pre-loaded)"
+echo "  ✓ Plasmids/Phage dataset downloaded"
+echo ""
+echo "🔍 Sequence Searches Completed:"
+echo "  ✓ AAAA (homopolymer)"
+echo "  ✓ ACGT (all four bases)"
+echo "  ✓ GGGGGGGG (G-run with reverse complement)"
+echo ""
+echo "📁 Output Locations:"
+echo "  • Downloaded data: data/downloads/imgpr.fasta.gz"
 echo "  • Search results: results/demo/searches/"
 echo "  • Summary report: results/demo/DEMO_SUMMARY.md"
 echo ""
-echo -e "${YELLOW}View Results:${NC}"
+echo "📈 View Detailed Results:"
+echo "  • JSON results: ls -lh results/demo/searches/*.json"
+echo "  • Summary report: cat results/demo/DEMO_SUMMARY.md"
 echo "  • Web UI: http://localhost:5002"
-echo "  • Summary: cat results/demo/DEMO_SUMMARY.md"
-echo "  • Search results: ls -l results/demo/searches/"
 echo ""
-echo -e "${GREEN}✓ All operations completed successfully!${NC}"
+echo "💡 Next Steps:"
+echo "  • Run k-mer analysis via Web UI: http://localhost:5002/analyze"
+echo "  • Perform codon analysis interactively"
+echo "  • Search for custom DNA patterns"
+echo ""
+echo -e "${GREEN}✓ Demonstration completed successfully!${NC}"
