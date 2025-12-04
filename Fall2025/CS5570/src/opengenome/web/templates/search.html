@@ -231,6 +231,8 @@ function displayResults(result) {
     `;
     
     if (result.sample_matches && result.sample_matches.length > 0) {
+        const hasRevComp = result.search_reverse_complement && result.sample_matches[0].rev_comp_count !== undefined;
+        
         html += `
             <h4>Top Matching Sequences</h4>
             <table class="matches-table">
@@ -238,7 +240,9 @@ function displayResults(result) {
                     <tr>
                         <th>Sequence ID</th>
                         <th>Description</th>
-                        <th>Match Count</th>
+                        <th>Forward Matches</th>
+                        ${hasRevComp ? '<th>Rev Comp Matches</th>' : ''}
+                        ${hasRevComp ? '<th>Total Matches</th>' : ''}
                         <th>First Position</th>
                         <th>Coverage</th>
                         <th>Length</th>
@@ -253,6 +257,8 @@ function displayResults(result) {
                     <td>${match.sequence_id || 'N/A'}</td>
                     <td>${match.description || 'N/A'}</td>
                     <td>${match.match_count.toLocaleString()}</td>
+                    ${hasRevComp ? `<td>${match.rev_comp_count.toLocaleString()}</td>` : ''}
+                    ${hasRevComp ? `<td>${match.total_match_count.toLocaleString()}</td>` : ''}
                     <td>${match.match_position}</td>
                     <td>${match.pattern_coverage.toFixed(2)}%</td>
                     <td>${match.sequence_length.toLocaleString()} bp</td>

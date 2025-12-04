@@ -107,6 +107,7 @@ class SequenceSearcher:
         
         # Calculate reverse complement if needed
         rev_comp = None
+        search_rev_comp = None
         if search_reverse_complement:
             rev_comp = self.reverse_complement(pattern)
             logger.info(f"Also searching for reverse complement: {rev_comp}")

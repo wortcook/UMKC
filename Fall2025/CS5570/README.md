@@ -112,7 +112,8 @@ make web-ui  # Opens http://localhost:5002
 Navigate through the intuitive interface:
 1. **Ingest** - Upload FASTA files or download from HuggingFace
 2. **Analyze** - Run k-mer or codon analysis
-3. **Results** - Browse and download results
+3. **Search** - Find sequences containing specific DNA patterns
+4. **Results** - Browse and download results
 
 **Option 2: CLI**
 
@@ -132,12 +133,16 @@ Navigate through the intuitive interface:
 make cli ARGS="version"
 make cli ARGS="config"
 
-# Data ingestion (Phase 3):
+# Data ingestion:
 ./opengenome ingest organelle --max-sequences 10000
-./opengenome ingest organelle --chunk-size 25000 --compression zstd
+./opengenome ingest local --input myfile.fasta --source-name mydata --append
 
-# Future commands (Phase 4+):
-./opengenome analyze kmer --k 6
+# Analysis commands:
+./opengenome analyze kmer --k 6 --input /data/organelles
+./opengenome analyze codon --input /data/organelles
+./opengenome analyze search --pattern ACGACGACGGGGACG --reverse-complement
+
+# Visualization:
 ./opengenome visualize --output /results/figures/
 ```
 
