@@ -256,8 +256,15 @@ def api_analyze_search():
         if not pattern:
             return jsonify({'status': 'error', 'message': 'Pattern is required'}), 400
         
+        # Validate pattern server-side
+        try:
+            SequenceSearcher.validate_dna_pattern(pattern)
+        except ValueError as e:
+            return jsonify({'status': 'error', 'message': str(e)}), 400
+        
         input_dir = DATA_DIR / data.get('input_dir', 'organelles')
         case_sensitive = data.get('case_sensitive', False)
+        reverse_complement = data.get('reverse_complement', False)
         max_results = data.get('max_results')
         if max_results:
             max_results = int(max_results)
@@ -267,7 +274,7 @@ def api_analyze_search():
         output_path = RESULTS_DIR / 'search' / f"search_{timestamp}.parquet"
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
-        logger.info(f"Starting sequence search: pattern={pattern}, input={input_dir}")
+        logger.info(f"Starting sequence search: pattern={pattern}, input={input_dir}, reverse_complement={reverse_complement}")
         
         spark = get_spark_session(app_name="WebSequenceSearch")
         searcher = SequenceSearcher(spark)
@@ -277,7 +284,8 @@ def api_analyze_search():
                 pattern=pattern,
                 output_path=str(output_path),
                 case_sensitive=case_sensitive,
-                max_results=max_results
+                max_results=max_results,
+                search_reverse_complement=reverse_complement
             )
             
             logger.info(f"Search completed: {result}")

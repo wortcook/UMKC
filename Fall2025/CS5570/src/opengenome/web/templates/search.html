@@ -43,6 +43,14 @@
         </div>
         
         <div class="form-group">
+            <label>
+                <input type="checkbox" id="reverse_complement" name="reverse_complement">
+                Search Reverse Complement
+            </label>
+            <small>Also search for the reverse complement of the pattern (important for genomic analysis)</small>
+        </div>
+        
+        <div class="form-group">
             <label for="max_results">Maximum Results</label>
             <input 
                 type="number" 
@@ -160,6 +168,7 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
     const pattern = document.getElementById('pattern').value;
     const input_dir = document.getElementById('input_dir').value || 'organelles';
     const case_sensitive = document.getElementById('case_sensitive').checked;
+    const reverse_complement = document.getElementById('reverse_complement').checked;
     const max_results = document.getElementById('max_results').value;
     
     // Validate pattern
@@ -182,6 +191,7 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
                 pattern: pattern,
                 input_dir: input_dir,
                 case_sensitive: case_sensitive,
+                reverse_complement: reverse_complement,
                 max_results: max_results ? parseInt(max_results) : null
             })
         });
@@ -211,9 +221,11 @@ function displayResults(result) {
     let html = `
         <div class="result-stats">
             <p><strong>Pattern:</strong> ${result.pattern} (${result.pattern_length} bp)</p>
+            ${result.reverse_complement_pattern ? `<p><strong>Reverse Complement:</strong> ${result.reverse_complement_pattern}</p>` : ''}
             <p><strong>Total Sequences Searched:</strong> ${result.total_sequences_searched.toLocaleString()}</p>
             <p><strong>Matching Sequences:</strong> ${result.matching_sequences.toLocaleString()} (${result.match_percentage}%)</p>
             <p><strong>Case Sensitive:</strong> ${result.case_sensitive ? 'Yes' : 'No'}</p>
+            <p><strong>Search Reverse Complement:</strong> ${result.search_reverse_complement ? 'Yes' : 'No'}</p>
             ${result.output_path ? `<p><strong>Results saved to:</strong> ${result.output_path}</p>` : ''}
         </div>
     `;

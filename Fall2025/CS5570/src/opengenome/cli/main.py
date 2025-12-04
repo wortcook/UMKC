@@ -745,13 +745,18 @@ def analyze_codon(ctx, input, output, frame, skip_n, skip_stops, min_count, rscu
     help="Perform case-sensitive search"
 )
 @click.option(
+    "--reverse-complement",
+    is_flag=True,
+    help="Also search for reverse complement of the pattern"
+)
+@click.option(
     "--max-results",
     type=int,
     default=None,
     help="Maximum number of results to return (default: all)"
 )
 @click.pass_context
-def search_sequences(ctx, input, output, pattern, case_sensitive, max_results):
+def search_sequences(ctx, input, output, pattern, case_sensitive, reverse_complement, max_results):
     """Search for sequences containing a specific pattern."""
     from opengenome.spark.session import get_spark_session, stop_spark_session
     from opengenome.analysis.sequence_search import SequenceSearcher
@@ -779,6 +784,7 @@ def search_sequences(ctx, input, output, pattern, case_sensitive, max_results):
         click.echo(f"    Pattern: {pattern}")
         click.echo(f"    Pattern length: {len(pattern)}")
         click.echo(f"    Case sensitive: {case_sensitive}")
+        click.echo(f"    Reverse complement: {reverse_complement}")
         if max_results:
             click.echo(f"    Max results: {max_results:,}")
         
@@ -793,7 +799,8 @@ def search_sequences(ctx, input, output, pattern, case_sensitive, max_results):
             pattern=pattern,
             output_path=output_file,
             case_sensitive=case_sensitive,
-            max_results=max_results
+            max_results=max_results,
+            search_reverse_complement=reverse_complement
         )
         
         # Display results
