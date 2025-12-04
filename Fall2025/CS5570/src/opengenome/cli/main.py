@@ -291,6 +291,165 @@ def ingest_custom(ctx, filename, output, source_name, chunk_size, compression):
         sys.exit(1)
 
 
+@ingest.command("local")
+@click.option(
+    "--input",
+    "input_path",
+    required=True,
+    type=click.Path(exists=True),
+    help="Path to local FASTA file (gzipped or plain)"
+)
+@click.option(
+    "--output",
+    type=click.Path(),
+    required=True,
+    help="Output directory for Parquet files"
+)
+@click.option(
+    "--source-name",
+    default="local",
+    help="Source identifier for sequences"
+)
+@click.option(
+    "--chunk-size",
+    type=int,
+    default=50000,
+    help="Sequences per Parquet shard"
+)
+@click.option(
+    "--compression",
+    type=click.Choice(["snappy", "gzip", "zstd", "none"]),
+    default="snappy",
+    help="Compression codec"
+)
+@click.option(
+    "--max-sequences",
+    type=int,
+    default=None,
+    help="Maximum sequences to process (for testing)"
+)
+@click.option(
+    "--append",
+    is_flag=True,
+    help="Append to existing shards instead of overwriting"
+)
+@click.pass_context
+def ingest_local(ctx, input_path, output, source_name, chunk_size, compression, max_sequences, append):
+    """
+    Ingest local FASTA file.
+    
+    Converts a local FASTA file (gzipped or plain) to Parquet shards
+    for Spark processing. Useful for custom datasets not on HuggingFace.
+    
+    \b
+    Examples:
+        opengenome ingest local \\
+            --input data/raw/bacteria.fasta.gz \\
+            --output /data/parquet/bacteria \\
+            --source-name bacteria \\
+            --max-sequences 1000
+        
+        # Append multiple files to same directory
+        opengenome ingest local \\
+            --input file1.fasta \\
+            --output /data/parquet/combined \\
+            --source-name combined
+        opengenome ingest local \\
+            --input file2.fasta \\
+            --output /data/parquet/combined \\
+            --source-name combined \\
+            --append
+    """
+    from opengenome.ingestion import FASTAToParquetConverter
+            --output /data/parquet/bacteria \\
+            --source-name bacteria \\
+            --max-sequences 1000
+    """
+    from opengenome.ingestion import FASTAToParquetConverter
+    
+    try:
+        input_file = Path(input_path)
+        
+        click.echo("=" * 60)
+        click.echo(f"OpenGenome2 Data Ingestion: Local File")
+        click.echo("=" * 60)
+        click.echo(f"  Input: {input_file}")
+        click.echo(f"  Source: {source_name}")
+        
+        # Validate file exists and is readable
+        if not input_file.exists():
+            raise FileNotFoundError(f"Input file not found: {input_file}")
+        
+        if not input_file.is_file():
+            raise ValueError(f"Input path is not a file: {input_file}")
+        
+        # Validate it's a FASTA file (basic check)
+        valid_extensions = ['.fasta', '.fa', '.fna', '.ffn', '.faa', '.frn', '.gz']
+        if not any(str(input_file).endswith(ext) for ext in valid_extensions):
+            click.echo(f"\n⚠️  Warning: File extension not recognized as FASTA", err=True)
+        click.echo(f"  Output: {output}")
+        if max_sequences:
+            click.echo(f"  Max sequences: {max_sequences:,} (testing mode)")
+        if append:
+            click.echo(f"  Mode: APPEND (will continue from existing shards)")
+        
+        converter = FASTAToParquetConverter(e
+        click.echo(f"  File size: {file_size:,} bytes ({file_size / (1024**2):.2f} MB)")
+        
+        # Convert to Parquet
+        stats = converter.convert(
+            fasta_path=input_file,
+            source_name=source_name,
+            output_subdir=Path(output).name,
+            max_sequences=max_sequences,
+            append=append
+        )   click.echo(f"  Max sequences: {max_sequences:,} (testing mode)")
+        
+        converter = FASTAToParquetConverter(
+            chunk_rows=chunk_size,
+            compression=compression,
+        click.echo(f"  Total sequences: {stats['total_sequences']:,}")
+        click.echo(f"  Total bases: {stats['total_bases']:,}")
+        click.echo(f"  Avg sequence length: {stats['total_bases'] // stats['total_sequences']:,}")
+        click.echo(f"  Parquet shards: {stats['total_shards']}")
+        if append and stats.get('starting_shard', 0) > 0:
+            click.echo(f"  Shard range: {stats['starting_shard']} to {stats['ending_shard']}")
+        click.echo(f"  Output path: {stats['output_path']}")
+            source_name=source_name,
+            output_subdir=Path(output).name,
+            max_sequences=max_sequences
+        )
+        
+        # Display results
+        click.echo("\n" + "=" * 60)
+        click.echo("Ingestion Complete!")
+        click.echo("=" * 60)
+        click.echo(f"  Total sequences: {stats['total_sequences']:,}")
+        click.echo(f"  Total bases: {stats['total_bases']:,}")
+        click.echo(f"  Avg sequence length: {stats['total_bases'] // stats['total_sequences']:,}")
+        click.echo(f"  Parquet shards: {stats['total_shards']}")
+        click.echo(f"  Output path: {stats['output_path']}")
+        click.echo("=" * 60)
+        
+        # Usage tip
+        click.echo(f"\n💡 To analyze:")
+        click.echo(f"   opengenome analyze kmer --input {stats['output_path']}")
+        click.echo(f"   opengenome analyze codon --input {stats['output_path']}")
+        
+    except FileNotFoundError as e:
+        click.echo(f"\n✗ File not found: {e}", err=True)
+        sys.exit(1)
+    except ValueError as e:
+        click.echo(f"\n✗ Invalid input: {e}", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"\n✗ Ingestion failed: {e}", err=True)
+        if ctx.obj.get("DEBUG"):
+            import traceback
+            click.echo("\n" + traceback.format_exc(), err=True)
+        sys.exit(1)
+
+
 @cli.group()
 def analyze():
     """Analysis commands (k-mer, codon, statistics)."""

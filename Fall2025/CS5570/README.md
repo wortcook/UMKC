@@ -42,14 +42,20 @@ make up
 make validate
 ```
 
-### Access Spark UI
+### Access Interfaces
 
-Open http://localhost:8081 in your browser to view the Spark Master dashboard.
+- **Web UI**: http://localhost:5000 - User-friendly interface for all operations
+- **Spark UI**: http://localhost:8081 - Spark Master dashboard
 
 ## Architecture
 
 ```
-┌─────────────────────┐
+┌──────────────┐
+│   Web UI     │ (5000)
+│  Flask App   │
+└──────┬───────┘
+       │
+┌──────▼──────────────┐
 │   Spark Master      │ (8081:8080, 7077)
 │  + CLI Driver App   │
 └──────┬──────────────┘
@@ -64,21 +70,23 @@ Open http://localhost:8081 in your browser to view the Spark Master dashboard.
 
 ### Components
 
-- **Spark Master**: Cluster coordinator + CLI application driver
-- **Spark Workers (2x)**: Distributed execution engines
-- **Shared Volumes**: Data, results, cache, logs
-
-## Usage
-
+- **Web UI**: Browser-based interface for ingestion and analysis
 ### Common Commands
 
 ```bash
 # Start cluster
 make up
 
+# Open Web UI
+make web-ui
+
+# Open Spark UI
+make spark-ui
+
 # View logs
 make logs
 make logs-follow
+make logs-web
 
 # Interactive shell
 make shell
@@ -92,6 +100,25 @@ make down
 # Clean up
 make clean
 ```
+
+### Running Analysis
+
+**Option 1: Web UI (Recommended)**
+
+```bash
+make web-ui  # Opens http://localhost:5000
+```
+
+Navigate through the intuitive interface:
+1. **Ingest** - Upload FASTA files or download from HuggingFace
+2. **Analyze** - Run k-mer or codon analysis
+3. **Results** - Browse and download results
+
+**Option 2: CLI**
+
+```bash
+# Use the CLI wrapper script:
+./opengenome version
 
 ### Running Analysis
 

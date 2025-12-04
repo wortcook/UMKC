@@ -77,8 +77,21 @@ class FASTAToParquetConverter:
         if max_sequences:
             logger.info(f"Max sequences: {max_sequences:,} (testing mode)")
         
+        # Detect existing shards if appending
+        starting_shard_idx = 0
+        if append:
+            existing_shards = sorted(output_path.glob("shard_*.parquet"))
+            if existing_shards:
+                # Extract the highest shard number
+                last_shard = existing_shards[-1]
+                last_idx = int(last_shard.stem.split('_')[1])
+                starting_shard_idx = last_idx + 1
+                logger.info(f"Append mode: Found {len(existing_shards)} existing shards, starting at shard {starting_shard_idx}")
+            else:
+                logger.info(f"Append mode: No existing shards found, starting at shard 0")
+        
         row_buffer = []
-        shard_idx = 1
+        shard_idx = starting_shard_idx
         total_sequences = 0
         total_bases = 0
         
@@ -144,9 +157,11 @@ class FASTAToParquetConverter:
             
             return {
                 "total_sequences": total_sequences,
-                "total_shards": total_shards,
+                "total_shards": shard_idx - starting_shard_idx,
                 "output_path": str(output_path),
-                "total_bases": total_bases
+                "total_bases": total_bases,
+                "starting_shard": starting_shard_idx,
+                "ending_shard": shard_idx - 1 if shard_idx > starting_shard_idx else starting_shard_idx
             }
             
         except Exception as e:

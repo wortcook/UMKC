@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}OpenGenome2 - Home{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Welcome to OpenGenome2</h2>
+    <p>A distributed genomic sequence analysis platform built with Apache Spark.</p>
+    
+    <div style="margin-top: 30px;">
+        <h3 style="margin-bottom: 15px;">Quick Start</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <div class="card" style="background: #ecf0f1; box-shadow: none;">
+                <h4 style="margin-bottom: 10px;">1. Ingest Data</h4>
+                <p>Upload FASTA files or download sequences from HuggingFace.</p>
+                <a href="/ingest"><button style="margin-top: 10px;">Go to Ingest</button></a>
+            </div>
+            
+            <div class="card" style="background: #ecf0f1; box-shadow: none;">
+                <h4 style="margin-bottom: 10px;">2. Analyze</h4>
+                <p>Run k-mer or codon usage analysis on your datasets.</p>
+                <a href="/analyze"><button style="margin-top: 10px;">Go to Analyze</button></a>
+            </div>
+            
+            <div class="card" style="background: #ecf0f1; box-shadow: none;">
+                <h4 style="margin-bottom: 10px;">3. View Results</h4>
+                <p>Browse and download analysis results.</p>
+                <a href="/results"><button style="margin-top: 10px;">Go to Results</button></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>System Status</h2>
+    <div id="status-loading" class="loading active">
+        <div class="spinner"></div>
+        <p>Checking system status...</p>
+    </div>
+    <div id="status-content" style="display: none;">
+        <div class="stats">
+            <div class="stat-item">
+                <strong>API Status</strong>
+                <span id="api-status">-</span>
+            </div>
+            <div class="stat-item">
+                <strong>Datasets</strong>
+                <span id="dataset-count">-</span>
+            </div>
+            <div class="stat-item">
+                <strong>Results</strong>
+                <span id="result-count">-</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Check system status on page load
+    async function checkStatus() {
+        try {
+            // Check API health
+            const healthResponse = await fetch('/api/health');
+            const healthData = await healthResponse.json();
+            
+            // Get datasets
+            const datasetsResponse = await fetch('/api/datasets');
+            const datasetsData = await datasetsResponse.json();
+            
+            // Get results
+            const resultsResponse = await fetch('/api/results');
+            const resultsData = await resultsResponse.json();
+            
+            // Update UI
+            document.getElementById('api-status').textContent = healthData.status === 'healthy' ? '✓ Healthy' : '✗ Error';
+            document.getElementById('dataset-count').textContent = datasetsData.datasets.length;
+            document.getElementById('result-count').textContent = resultsData.results.length;
+            
+            document.getElementById('status-loading').style.display = 'none';
+            document.getElementById('status-content').style.display = 'block';
+            
+        } catch (error) {
+            document.getElementById('status-loading').innerHTML = '<p style="color: #e74c3c;">Failed to load system status</p>';
+        }
+    }
+    
+    checkStatus();
+</script>
+{% endblock %}

@@ -1,4 +1,4 @@
-.PHONY: help build up down restart logs clean test shell validate
+.PHONY: help build up down restart logs clean test shell validate web-ui
 
 # Default target
 help:
@@ -17,6 +17,7 @@ help:
 	@echo "  make test           Run test suite"
 	@echo "  make ps             Show running containers"
 	@echo "  make spark-ui       Open Spark Master UI in browser"
+	@echo "  make web-ui         Open Web UI in browser"
 	@echo "  make cli            Run OpenGenome CLI (use ARGS=\"command\")"
 
 # Build all containers
@@ -129,6 +130,15 @@ scale:
 spark-ui:
 	@echo "Opening Spark Master UI..."
 	@open http://localhost:8081 || xdg-open http://localhost:8081 || echo "Please open http://localhost:8081 in your browser"
+
+# Open Web UI
+web-ui:
+	@echo "Opening OpenGenome2 Web UI..."
+	@open http://localhost:5000 || xdg-open http://localhost:5000 || echo "Please open http://localhost:5000 in your browser"
+
+# View web service logs
+logs-web:
+	docker-compose logs -f web
 
 # Check disk usage
 disk-usage:

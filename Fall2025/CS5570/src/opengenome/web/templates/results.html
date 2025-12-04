@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}OpenGenome2 - Results{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Analysis Results</h2>
+    <p>Browse and download completed analysis results.</p>
+</div>
+
+<div class="card">
+    <h3>Available Results</h3>
+    <div id="results-loading" class="loading active">
+        <div class="spinner"></div>
+        <p>Loading results...</p>
+    </div>
+    <div id="results-content" style="display: none;">
+        <table id="results-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Path</th>
+                    <th>Size (MB)</th>
+                    <th>Modified</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div id="no-results" style="display: none; text-align: center; padding: 40px; color: #7f8c8d;">
+            <p>No results found. Run some analyses first!</p>
+            <a href="/analyze"><button style="margin-top: 10px;">Go to Analyze</button></a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Load results
+    async function loadResults() {
+        try {
+            const response = await fetch('/api/results');
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                const tbody = document.querySelector('#results-table tbody');
+                tbody.innerHTML = '';
+                
+                if (data.results.length === 0) {
+                    document.getElementById('no-results').style.display = 'block';
+                    document.getElementById('results-table').style.display = 'none';
+                } else {
+                    data.results.forEach(result => {
+                        const row = tbody.insertRow();
+                        const date = new Date(result.modified);
+                        row.innerHTML = `
+                            <td><strong>${result.name}</strong></td>
+                            <td><code>${result.path}</code></td>
+                            <td>${result.size_mb.toFixed(2)}</td>
+                            <td>${date.toLocaleString()}</td>
+                        `;
+                    });
+                }
+                
+                document.getElementById('results-loading').style.display = 'none';
+                document.getElementById('results-content').style.display = 'block';
+            }
+        } catch (error) {
+            document.getElementById('results-loading').innerHTML = '<p style="color: #e74c3c;">Failed to load results</p>';
+        }
+    }
+    
+    loadResults();
+</script>
+{% endblock %}
