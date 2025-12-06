@@ -134,21 +134,21 @@ def api_ingest_local():
         logger.info(f"Starting local file ingestion: {file.filename}")
         
         # Convert to Parquet
-        converter = FastaToParquetConverter()
-        try:
-            stats = converter.convert(
-                input_path=str(upload_path),
-                output_dir=str(output_dir),
-                chunk_size=chunk_size,
-                compression=compression,
-                append=append,
-                max_sequences=max_sequences
-            )
-            
-            logger.info(f"Local ingestion completed: {stats}")
-            return jsonify({'status': 'success', 'stats': stats})
-        finally:
-            converter.stop()
+        converter = FastaToParquetConverter(
+            chunk_rows=chunk_size,
+            compression=compression
+        )
+        
+        stats = converter.convert(
+            fasta_path=upload_path,
+            source_name=source_name,
+            output_subdir=None,  # Use source_name directly in path
+            max_sequences=max_sequences,
+            append=append
+        )
+        
+        logger.info(f"Local ingestion completed: {stats}")
+        return jsonify({'status': 'success', 'stats': stats})
         
     except Exception as e:
         logger.error(f"Local ingestion failed: {str(e)}", exc_info=True)

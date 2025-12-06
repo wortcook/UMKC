@@ -33,7 +33,7 @@ services:
       resources:
         limits:
           cpus: '4'
-          memory: 4G
+          memory: 6G
         reservations:
           cpus: '2'
           memory: 2G
@@ -55,7 +55,7 @@ services:
       dockerfile: Dockerfile
     container_name: opengenome-spark-worker-1
     hostname: spark-worker-1
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --memory 4g --cores 2
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --memory 14g --cores 2
     depends_on:
       - spark-master
     environment:
@@ -70,11 +70,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4'
-          memory: 7G
+          cpus: '10'
+          memory: 16G
         reservations:
           cpus: '2'
-          memory: 4G
+          memory: 6G
     healthcheck:
       test: ["CMD", "pgrep", "-f", "org.apache.spark.deploy.worker.Worker"]
       interval: 30s
@@ -93,7 +93,7 @@ services:
       dockerfile: Dockerfile
     container_name: opengenome-spark-worker-2
     hostname: spark-worker-2
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --memory 4g --cores 2
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --memory 14g --cores 2
     depends_on:
       - spark-master
     environment:
@@ -108,11 +108,87 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4'
-          memory: 7G
+          cpus: '10'
+          memory: 16G
         reservations:
           cpus: '2'
-          memory: 4G
+          memory: 6G
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "org.apache.spark.deploy.worker.Worker"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  spark-worker-3:
+    build:
+      context: ./docker/spark-worker
+      dockerfile: Dockerfile
+    container_name: opengenome-spark-worker-3
+    hostname: spark-worker-3
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --memory 14g --cores 2
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_NO_DAEMONIZE=true
+    volumes:
+      - ./data:/data:ro
+      - ./cache:/cache
+      - ./results:/results
+    networks:
+      - spark-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '10'
+          memory: 16G
+        reservations:
+          cpus: '2'
+          memory: 6G
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "org.apache.spark.deploy.worker.Worker"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  spark-worker-4:
+    build:
+      context: ./docker/spark-worker
+      dockerfile: Dockerfile
+    container_name: opengenome-spark-worker-4
+    hostname: spark-worker-4
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --memory 14g --cores 2
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_NO_DAEMONIZE=true
+    volumes:
+      - ./data:/data:ro
+      - ./cache:/cache
+      - ./results:/results
+    networks:
+      - spark-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '10'
+          memory: 16G
+        reservations:
+          cpus: '2'
+          memory: 6G
     healthcheck:
       test: ["CMD", "pgrep", "-f", "org.apache.spark.deploy.worker.Worker"]
       interval: 30s
@@ -151,10 +227,10 @@ services:
       resources:
         limits:
           cpus: '2'
-          memory: 2G
+          memory: 6G
         reservations:
           cpus: '0.5'
-          memory: 512M
+          memory: 1G
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s

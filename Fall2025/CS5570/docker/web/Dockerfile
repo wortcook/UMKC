@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.8-slim
 
 LABEL maintainer="OpenGenome2 Team"
 LABEL description="OpenGenome2 Web UI"
@@ -6,10 +6,12 @@ LABEL description="OpenGenome2 Web UI"
 # Set working directory
 WORKDIR /opt/opengenome
 
-# Install system dependencies including Java for PySpark
+# Install system dependencies including Java for PySpark and gcc for biopython
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     default-jre-headless \
+    gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Set JAVA_HOME for PySpark (auto-detect)

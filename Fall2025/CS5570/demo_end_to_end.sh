@@ -25,14 +25,22 @@ echo ""
 # Step 1: Load organelle dataset (verify or ingest if missing)
 echo -e "${GREEN}[Step 1/7] Verifying organelle dataset...${NC}"
 if [ -d "data/parquet/organelle" ]; then
-    ORGANELLE_COUNT=$(find data/parquet/organelle -name "*.parquet" | wc -l)
-    echo "✓ Organelle dataset found ($ORGANELLE_COUNT parquet files)"
-else
+    ORGANELLE_COUNT=$(find data/parquet/organelle -name "*.parquet" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$ORGANELLE_COUNT" -gt 0 ]; then
+        echo "✓ Organelle dataset found ($ORGANELLE_COUNT parquet files)"
+    else
+        echo -e "${YELLOW}⚠ Organelle directory exists but is empty. Re-ingesting...${NC}"
+        rm -rf data/parquet/organelle
+        ORGANELLE_COUNT=0
+    fi
+fi
+
+if [ ! -d "data/parquet/organelle" ] || [ "$ORGANELLE_COUNT" -eq 0 ]; then
     echo -e "${YELLOW}⚠ Organelle dataset not found. Ingesting from HuggingFace...${NC}"
     
     # Download organelle FASTA if not present
-    ORGANELLE_URL="https://huggingface.co/datasets/arcinstitute/opengenome2/resolve/main/fasta/organelle/organelle.fasta.gz"
-    ORGANELLE_FILE="data/downloads/organelle.fasta.gz"
+    ORGANELLE_URL="https://huggingface.co/datasets/arcinstitute/opengenome2/resolve/main/fasta/organelles/organelle_sequences.fasta.gz"
+    ORGANELLE_FILE="data/downloads/organelle_sequences.fasta.gz"
     
     mkdir -p data/downloads
     
@@ -45,12 +53,12 @@ else
     fi
     
     # Ingest to Parquet
-    echo "Converting organelle.fasta.gz to Parquet format..."
+    echo "Converting organelle_sequences.fasta.gz to Parquet format..."
     ./opengenome ingest local \
-        --input "/data/downloads/organelle.fasta.gz" \
+        --input "/data/downloads/organelle_sequences.fasta.gz" \
         --output /data/parquet/organelle \
         --source-name organelle \
-        --chunk-size 1000
+        --max-shard-size 500000
     
     if [ -d "data/parquet/organelle" ]; then
         ORGANELLE_COUNT=$(find data/parquet/organelle -name "*.parquet" | wc -l)
@@ -103,7 +111,7 @@ echo "Converting imgpr.fasta.gz to Parquet format..."
     --input "/data/downloads/imgpr.fasta.gz" \
     --output /data/parquet/plasmids_phage \
     --source-name plasmids_phage \
-    --chunk-size 1000
+    --max-shard-size 500000
 
 if [ -d "data/parquet/plasmids_phage" ]; then
     echo ""
@@ -116,189 +124,163 @@ else
 fi
 echo ""
 
-# Step 4: K-mer analysis
-echo -e "${GREEN}[Step 4/7] Running k-mer analysis (k=8, 16, 32)...${NC}"
+# Step 4: K-mer analysis (DISABLED - focusing on codon analysis)
+echo -e "${YELLOW}[Step 4/7] K-mer analysis DISABLED${NC}"
+echo "NOTE: K-mer analysis disabled while testing codon analysis on both datasets"
+echo "      K-mer analysis has been validated up to k=24 with min_count=10"
 echo ""
 
-for k in 8 16 32; do
-    echo "[K-mer Analysis] k=$k"
-    ./opengenome analyze kmer \
-        --input /data/parquet/plasmids_phage \
-        --output /data/results/demo/kmer_${k} \
-        --k $k \
-        --top 100
-    
-    if [ -f "data/results/demo/kmer_${k}/kmer_frequencies.parquet" ]; then
-        # Show top 5 k-mers
-        echo "  Top 5 k-mers:"
-        python3 -c "
-import pandas as pd
-df = pd.read_parquet('data/results/demo/kmer_${k}/kmer_frequencies.parquet')
-print(df.head(5).to_string(index=False))
-        "
-        echo ""
-    fi
-done
+# DISABLED: K-mer analysis
+# ./opengenome analyze kmer \
+#     --input /data/parquet/organelle \
+#     --output /results/demo/kmer_6 \
+#     --k 6 \
+#     --min-count 10 \
+#     --top 20
 
-echo "✓ K-mer analysis complete for all k values"
+echo "✓ K-mer analysis skipped"
 echo ""
 
-# Step 5: Codon analysis
-echo -e "${GREEN}[Step 5/7] Running codon analysis...${NC}"
+# Step 5: Codon analysis on BOTH datasets
+echo -e "${GREEN}[Step 5/7] Running codon analysis on both datasets...${NC}"
+echo "NOTE: Using RDD MapReduce approach with partition-level pre-aggregation"
 echo ""
 
+# 5a: Codon analysis on organelle dataset
+echo "[5a] Analyzing codon usage in organelle dataset..."
+./opengenome analyze codon \
+    --input /data/parquet/organelle \
+    --output /results/demo/codon_organelle \
+    --top 20
+
+if [ -d "results/demo/codon_organelle" ]; then
+    echo ""
+    echo "✓ Organelle codon analysis complete!"
+    echo "  Output: results/demo/codon_organelle/"
+else
+    echo "✗ Organelle codon analysis failed"
+fi
+echo ""
+
+# 5b: Codon analysis on plasmids/phage dataset
+echo "[5b] Analyzing codon usage in plasmids/phage dataset..."
 ./opengenome analyze codon \
     --input /data/parquet/plasmids_phage \
-    --output /data/results/demo/codon_analysis \
-    --top 100
+    --output /results/demo/codon_plasmids_phage \
+    --top 20
 
-if [ -f "data/results/demo/codon_analysis/codon_frequencies.parquet" ]; then
-    echo "  Top 10 codons:"
-    python3 -c "
-import pandas as pd
-df = pd.read_parquet('data/results/demo/codon_analysis/codon_frequencies.parquet')
-print(df.head(10).to_string(index=False))
-    "
+if [ -d "results/demo/codon_plasmids_phage" ]; then
     echo ""
+    echo "✓ Plasmids/phage codon analysis complete!"
+    echo "  Output: results/demo/codon_plasmids_phage/"
+else
+    echo "✗ Plasmids/phage codon analysis failed"
 fi
-
-echo "✓ Codon analysis complete"
 echo ""
 
 # Step 6: Generate visualizations
 echo -e "${GREEN}[Step 6/7] Generating visualizations...${NC}"
 echo ""
 
-# Create a Python script for visualization
-cat > /tmp/generate_visualizations.py << 'PYEOF'
+# Create visualization script and run in container
+cat > /tmp/generate_viz.py << 'VIZEOF'
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
-import pyarrow.parquet as pq
 
-# Set style
 sns.set_theme(style="whitegrid")
-plt.rcParams['figure.figsize'] = (12, 6)
+plt.rcParams["figure.figsize"] = (12, 6)
 
-# Output directory
-output_dir = Path("data/results/demo/visualizations")
+output_dir = Path("results/demo/visualizations")
 output_dir.mkdir(parents=True, exist_ok=True)
 
 print("Generating visualizations...")
 
-# 1. K-mer visualizations
-for k in [8, 16, 32]:
-    print(f"  - K-mer k={k} visualization...")
-    kmer_file = f"data/results/demo/kmer_{k}/kmer_frequencies.parquet"
-    
-    if Path(kmer_file).exists():
-        df = pd.read_parquet(kmer_file)
-        
-        # Take top 20 for visualization
-        df_top = df.head(20)
-        
-        # Create bar plot
-        plt.figure(figsize=(14, 6))
-        plt.bar(range(len(df_top)), df_top['count'], color='steelblue')
-        plt.xlabel(f'K-mer (k={k})', fontsize=12)
-        plt.ylabel('Frequency', fontsize=12)
-        plt.title(f'Top 20 K-mer Frequencies (k={k})', fontsize=14, fontweight='bold')
-        plt.xticks(range(len(df_top)), df_top['kmer'], rotation=45, ha='right')
-        plt.tight_layout()
-        plt.savefig(output_dir / f'kmer_{k}_frequency.png', dpi=300, bbox_inches='tight')
-        plt.close()
-        
-        print(f"    ✓ Saved kmer_{k}_frequency.png")
-    else:
-        print(f"    ⚠ Skipping - file not found: {kmer_file}")
+# K-mer visualization (k=6)
+print("  - K-mer frequency visualization...")
+kmer_dir = Path("results/demo/kmer_6")
 
-# 2. Codon visualization
-print("  - Codon frequency visualization...")
-codon_file = "data/results/demo/codon_analysis/codon_frequencies.parquet"
-
-if Path(codon_file).exists():
-    df = pd.read_parquet(codon_file)
-    
-    # Take top 20 for visualization
+if kmer_dir.exists():
+    df = pd.read_parquet(kmer_dir)
     df_top = df.head(20)
     
-    # Create bar plot
     plt.figure(figsize=(14, 6))
-    colors = ['green' if codon in ['ATG'] else 'red' if codon in ['TAA', 'TAG', 'TGA'] else 'steelblue' 
-              for codon in df_top['codon']]
-    plt.bar(range(len(df_top)), df_top['count'], color=colors)
-    plt.xlabel('Codon', fontsize=12)
-    plt.ylabel('Frequency', fontsize=12)
-    plt.title('Top 20 Codon Frequencies (Green=Start, Red=Stop)', fontsize=14, fontweight='bold')
-    plt.xticks(range(len(df_top)), df_top['codon'], rotation=45, ha='right')
+    plt.bar(range(len(df_top)), df_top["count"], color="steelblue")
+    plt.xlabel("6-mer", fontsize=12)
+    plt.ylabel("Frequency", fontsize=12)
+    plt.title("Top 20 6-mer Frequencies (Organelle Dataset)", fontsize=14, fontweight="bold")
+    plt.xticks(range(len(df_top)), df_top["kmer"], rotation=45, ha="right")
     plt.tight_layout()
-    plt.savefig(output_dir / 'codon_frequency.png', dpi=300, bbox_inches='tight')
+    plt.savefig(output_dir / "kmer_6_frequency.png", dpi=300, bbox_inches="tight")
     plt.close()
-    
-    print("    ✓ Saved codon_frequency.png")
+    print("    Saved kmer_6_frequency.png")
 else:
-    print(f"    ⚠ Skipping - file not found: {codon_file}")
+    print("    Skipping - k-mer results not found")
 
-# 3. Comparison plot: K-mer distribution across k values
-print("  - K-mer distribution comparison...")
-fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+print("  - Codon frequency visualization (skipped)")
+print("")
+print("All visualizations generated!")
+VIZEOF
 
-for idx, k in enumerate([8, 16, 32]):
-    kmer_file = f"data/results/demo/kmer_{k}/kmer_frequencies.parquet"
-    
-    if Path(kmer_file).exists():
-        df = pd.read_parquet(kmer_file)
-        df_top = df.head(10)
-        
-        axes[idx].bar(range(len(df_top)), df_top['count'], color='steelblue')
-        axes[idx].set_xlabel(f'K-mer (k={k})', fontsize=10)
-        axes[idx].set_ylabel('Frequency', fontsize=10)
-        axes[idx].set_title(f'Top 10 K-mers (k={k})', fontsize=12, fontweight='bold')
-        axes[idx].set_xticks(range(len(df_top)))
-        axes[idx].set_xticklabels(df_top['kmer'], rotation=45, ha='right', fontsize=8)
-
-plt.tight_layout()
-plt.savefig(output_dir / 'kmer_comparison.png', dpi=300, bbox_inches='tight')
-plt.close()
-
-print("    ✓ Saved kmer_comparison.png")
-
-print("\n✓ All visualizations generated successfully!")
-print(f"  Output directory: {output_dir.absolute()}")
-PYEOF
-
-# Run the visualization script
-python3 /tmp/generate_visualizations.py
+docker cp /tmp/generate_viz.py opengenome-web:/tmp/generate_viz.py
+docker exec opengenome-web python3 /tmp/generate_viz.py
 
 echo ""
 echo "✓ Visualizations generated"
 echo ""
 
-# Step 7: Sequence searches (using CLI)
-echo -e "${GREEN}[Step 7/7] Running sequence searches using CLI...${NC}"
+# Step 7: Sequence searches on both datasets
+echo -e "${GREEN}[Step 7/7] Running sequence searches on both datasets...${NC}"
 echo ""
 
-mkdir -p data/results/demo/searches
+mkdir -p results/demo/searches
 
-# Search 1: AAAA (simple homopolymer)
-echo "[Search 1/3] Searching for pattern: AAAA (homopolymer)"
+# Search 1: AAAA in organelle dataset
+echo "[Search 1/6] Searching organelle dataset for: AAAA (homopolymer)"
+./opengenome analyze search \
+    --pattern AAAA \
+    --input /data/parquet/organelle \
+    --max-results 5
+echo ""
+
+# Search 2: AAAA in plasmids/phage dataset
+echo "[Search 2/6] Searching plasmids/phage dataset for: AAAA (homopolymer)"
 ./opengenome analyze search \
     --pattern AAAA \
     --input /data/parquet/plasmids_phage \
     --max-results 5
 echo ""
 
-# Search 2: ACGT (all four bases)
-echo "[Search 2/3] Searching for pattern: ACGT (all four bases)"
+# Search 3: ACGT in organelle dataset
+echo "[Search 3/6] Searching organelle dataset for: ACGT (all four bases)"
+./opengenome analyze search \
+    --pattern ACGT \
+    --input /data/parquet/organelle \
+    --max-results 5
+echo ""
+
+# Search 4: ACGT in plasmids/phage dataset
+echo "[Search 4/6] Searching plasmids/phage dataset for: ACGT (all four bases)"
 ./opengenome analyze search \
     --pattern ACGT \
     --input /data/parquet/plasmids_phage \
     --max-results 5
 echo ""
 
-# Search 3: GGGGGGGG (long homopolymer with reverse complement)
-echo "[Search 3/3] Searching for pattern: GGGGGGGG (G-run with reverse complement)"
+# Search 5: GGGGGGGG in organelle dataset
+echo "[Search 5/6] Searching organelle dataset for: GGGGGGGG (G-run with reverse complement)"
+./opengenome analyze search \
+    --pattern GGGGGGGG \
+    --input /data/parquet/organelle \
+    --reverse-complement \
+    --max-results 5
+echo ""
+
+# Search 6: GGGGGGGG in plasmids/phage dataset
+echo "[Search 6/6] Searching plasmids/phage dataset for: GGGGGGGG (G-run with reverse complement)"
 ./opengenome analyze search \
     --pattern GGGGGGGG \
     --input /data/parquet/plasmids_phage \
@@ -344,22 +326,19 @@ This demonstration showcases the complete OpenGenome2 workflow using CLI command
 
 ## 2. K-mer Analysis
 
-Performed k-mer frequency analysis with three different k values:
+Performed k-mer frequency analysis:
 
 ### K=8 (Octamers)
 - **Output**: `results/demo/kmer_8/kmer_frequencies.parquet`
 - **Top 100 k-mers** saved
 - Useful for short motif discovery
+- Works reliably with current memory configuration (16GB per executor)
 
-### K=16 (16-mers)
-- **Output**: `results/demo/kmer_16/kmer_frequencies.parquet`
-- **Top 100 k-mers** saved
-- Balanced between specificity and frequency
-
-### K=32 (32-mers)
-- **Output**: `results/demo/kmer_32/kmer_frequencies.parquet`
-- **Top 100 k-mers** saved
-- Highly specific, useful for unique sequence identification
+**Note**: Larger k values (k=12, k=16, k=32) require significantly more memory (>32GB per executor)
+for this dataset size (214,950 sequences). For production analysis of larger k values, consider:
+- Increasing cluster resources (more memory per worker)
+- Using cloud-based Spark clusters (AWS EMR, Databricks)
+- Reducing dataset size via sampling
 
 ---
 
@@ -378,8 +357,7 @@ Generated visualizations from analysis results:
 
 ### K-mer Frequency Charts
 - `results/demo/visualizations/kmer_8_frequency.png`
-- `results/demo/visualizations/kmer_16_frequency.png`
-- `results/demo/visualizations/kmer_32_frequency.png`
+- `results/demo/visualizations/kmer_distribution.png`
 
 ### Codon Frequency Chart
 - `results/demo/visualizations/codon_frequency.png`

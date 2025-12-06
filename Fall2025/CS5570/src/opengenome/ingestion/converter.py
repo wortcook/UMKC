@@ -21,7 +21,8 @@ class FASTAToParquetConverter:
     
     def __init__(
         self,
-        chunk_rows: int = 50_000,
+        chunk_rows: int = 50,
+        max_shard_size: Optional[int] = None,
         compression: str = "snappy",
         output_dir: Optional[Path] = None
     ):
@@ -29,16 +30,21 @@ class FASTAToParquetConverter:
         Initialize FASTA to Parquet converter.
         
         Args:
-            chunk_rows: Number of sequences per Parquet shard
+            chunk_rows: Maximum number of sequences per Parquet shard (deprecated, use max_shard_size)
+            max_shard_size: Maximum total bytes per shard (e.g., 500000 = 500KB). Overrides chunk_rows.
             compression: Compression codec (snappy, gzip, zstd, none)
             output_dir: Output directory for Parquet files
         """
         self.chunk_rows = chunk_rows
+        self.max_shard_size = max_shard_size
         self.compression = compression
         self.output_dir = output_dir or Path("/data/parquet")
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
-        logger.info(f"Initialized converter: {chunk_rows} rows/shard, {compression} compression")
+        if max_shard_size:
+            logger.info(f"Initialized converter: max {max_shard_size:,} bytes/shard, {compression} compression")
+        else:
+            logger.info(f"Initialized converter: {chunk_rows} rows/shard, {compression} compression")
         logger.info(f"Output directory: {self.output_dir}")
     
     def convert(
@@ -46,7 +52,8 @@ class FASTAToParquetConverter:
         fasta_path: Path,
         source_name: str = "organelle",
         output_subdir: Optional[str] = None,
-        max_sequences: Optional[int] = None
+        max_sequences: Optional[int] = None,
+        append: bool = False
     ) -> Dict[str, Any]:
         """
         Convert FASTA file to Parquet shards.
@@ -56,6 +63,7 @@ class FASTAToParquetConverter:
             source_name: Source identifier for the sequences
             output_subdir: Optional subdirectory for output files
             max_sequences: Maximum number of sequences to process (for testing)
+            append: If True, append to existing shards instead of overwriting
             
         Returns:
             Dict with conversion statistics:
@@ -91,6 +99,7 @@ class FASTAToParquetConverter:
                 logger.info(f"Append mode: No existing shards found, starting at shard 0")
         
         row_buffer = []
+        current_shard_bytes = 0
         shard_idx = starting_shard_idx
         total_sequences = 0
         total_bases = 0
@@ -121,23 +130,33 @@ class FASTAToParquetConverter:
                     
                     total_sequences += 1
                     total_bases += seq_length
+                    current_shard_bytes += seq_length
                     
                     # Check max sequences limit
                     if max_sequences and total_sequences >= max_sequences:
                         logger.info(f"Reached max sequences limit: {max_sequences:,}")
                         break
                     
-                    # Flush chunk when buffer is full
-                    if len(row_buffer) >= self.chunk_rows:
+                    # Flush chunk based on size or row count
+                    should_flush = False
+                    if self.max_shard_size:
+                        # Size-based sharding
+                        should_flush = current_shard_bytes >= self.max_shard_size
+                    else:
+                        # Row-based sharding (legacy)
+                        should_flush = len(row_buffer) >= self.chunk_rows
+                    
+                    if should_flush:
                         self._flush_chunk(row_buffer, output_path, shard_idx)
                         shard_idx += 1
                         row_buffer = []
+                        current_shard_bytes = 0
                         
                         # Log progress every 10 shards
-                        if (shard_idx - 1) % 10 == 0:
+                        if shard_idx % 10 == 0:
                             logger.info(
                                 f"Processed {total_sequences:,} sequences "
-                                f"({total_bases:,} bases) - {shard_idx - 1} shards"
+                                f"({total_bases:,} bases) - {shard_idx} shards"
                             )
                 
                 # Flush remaining records

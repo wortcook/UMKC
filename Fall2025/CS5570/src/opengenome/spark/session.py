@@ -73,9 +73,9 @@ def get_spark_session(
     spark_conf.set("spark.driver.memory", driver_memory)
     spark_conf.set("spark.executor.memory", executor_memory)
     
-    # Memory overhead to prevent OOM (20% overhead)
-    spark_conf.set("spark.executor.memoryOverhead", "512m")
-    spark_conf.set("spark.driver.memoryOverhead", "512m")
+    # Memory overhead to prevent OOM (conservative for 4GB workers)
+    spark_conf.set("spark.executor.memoryOverhead", "256m")
+    spark_conf.set("spark.driver.memoryOverhead", "256m")
     
     # Memory fraction for execution/storage (conservative settings)
     spark_conf.set("spark.memory.fraction", "0.6")
@@ -86,6 +86,10 @@ def get_spark_session(
         spark_conf.set("spark.sql.adaptive.enabled", "true")
         spark_conf.set("spark.sql.adaptive.coalescePartitions.enabled", "true")
     
+    # Executor cores (limit to match worker availability)
+    executor_cores = os.environ.get("SPARK_EXECUTOR_CORES", "1")
+    spark_conf.set("spark.executor.cores", executor_cores)
+    
     # Shuffle partitions (must be integer, not "auto")
     shuffle_partitions = os.environ.get("SPARK_SQL_SHUFFLE_PARTITIONS", "200")
     try:
@@ -94,6 +98,10 @@ def get_spark_session(
     except ValueError:
         logger.warning(f"Invalid shuffle partitions '{shuffle_partitions}', using default '200'")
         shuffle_partitions = "200"
+    
+    # Set max partition bytes to create smaller file reading tasks
+    # Default is 128MB, reduce to 32MB for better parallelism with many small files
+    spark_conf.set("spark.sql.files.maxPartitionBytes", "33554432")  # 32MB
     spark_conf.set("spark.sql.shuffle.partitions", shuffle_partitions)
     
     # Network configuration
@@ -119,6 +127,8 @@ def get_spark_session(
     logger.info(f"  - Version: {_spark_session.version}")
     logger.info(f"  - Master: {_spark_session.sparkContext.master}")
     logger.info(f"  - App ID: {_spark_session.sparkContext.applicationId}")
+    logger.info(f"[MEMORY CONFIG] Driver: {driver_memory}, Executor: {executor_memory}, Overhead: 256m")
+    logger.info(f"[MEMORY CONFIG] Memory fraction: 0.6, Storage fraction: 0.3")
     
     return _spark_session
 
