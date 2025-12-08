@@ -107,7 +107,7 @@ def api_ingest_local():
     """Ingest local FASTA files"""
     try:
         # Lazy import to avoid Spark initialization at startup
-        from opengenome.ingestion.converter import FastaToParquetConverter
+        from opengenome.ingestion.converter import FASTAToParquetConverter
         
         if 'file' not in request.files:
             return jsonify({'status': 'error', 'message': 'No file provided'}), 400
@@ -134,7 +134,7 @@ def api_ingest_local():
         logger.info(f"Starting local file ingestion: {file.filename}")
         
         # Convert to Parquet
-        converter = FastaToParquetConverter(
+        converter = FASTAToParquetConverter(
             chunk_rows=chunk_size,
             compression=compression
         )
@@ -160,27 +160,40 @@ def api_analyze_kmer():
     """Run k-mer frequency analysis"""
     try:
         # Lazy import to avoid Spark initialization at startup
-        from opengenome.analysis.kmer_analyzer import KmerAnalyzer
+        from opengenome.analysis.kmer import KmerAnalyzer
+        from opengenome.spark.session import get_spark_session
         
         data = request.json
-        input_dir = DATA_DIR / data.get('input_dir', 'organelles')
-        k = int(data.get('k', 4))
-        output_path = RESULTS_DIR / 'kmer' / f"k{k}_results.parquet"
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        input_path = data.get('input', '/data/parquet/organelle')
+        k = int(data.get('k', 6))
+        output_path = data.get('output', f'/results/kmer/k{k}_results')
+        skip_n = data.get('skip_n', True)
+        min_count = int(data.get('min_count', 1))
         
-        logger.info(f"Starting k-mer analysis: k={k}, input={input_dir}")
+        logger.info(f"Starting k-mer analysis: k={k}, input={input_path}")
         
-        analyzer = KmerAnalyzer(k=k)
-        try:
-            result = analyzer.analyze(
-                input_path=str(input_dir),
-                output_path=str(output_path)
-            )
-            
-            logger.info(f"K-mer analysis completed: {result}")
-            return jsonify({'status': 'success', 'result': result})
-        finally:
-            analyzer.stop()
+        spark = get_spark_session()
+        analyzer = KmerAnalyzer(spark=spark, k=k)
+        
+        result_df = analyzer.analyze(
+            input_path=input_path,
+            output_path=output_path,
+            skip_n=skip_n,
+            min_count=min_count
+        )
+        
+        # Get stats
+        unique_kmers = result_df.count()
+        
+        logger.info(f"K-mer analysis completed: {unique_kmers} unique k-mers")
+        return jsonify({
+            'status': 'success', 
+            'result': {
+                'unique_kmers': unique_kmers,
+                'k': k,
+                'output_path': output_path
+            }
+        })
         
     except Exception as e:
         logger.error(f"K-mer analysis failed: {str(e)}", exc_info=True)
@@ -192,26 +205,39 @@ def api_analyze_codon():
     """Run codon usage analysis"""
     try:
         # Lazy import to avoid Spark initialization at startup
-        from opengenome.analysis.codon_analyzer import CodonAnalyzer
+        from opengenome.analysis.codon import CodonAnalyzer
+        from opengenome.spark.session import get_spark_session
         
         data = request.json
-        input_dir = DATA_DIR / data.get('input_dir', 'organelles')
-        output_path = RESULTS_DIR / 'codon' / 'codon_results.parquet'
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        input_path = data.get('input', '/data/parquet/organelle')
+        output_path = data.get('output', '/results/codon/codon_results')
+        frame = int(data.get('frame', 0))
+        skip_n = data.get('skip_n', True)
+        min_count = int(data.get('min_count', 1))
         
-        logger.info(f"Starting codon analysis: input={input_dir}")
+        logger.info(f"Starting codon analysis: input={input_path}, frame={frame}")
         
-        analyzer = CodonAnalyzer()
-        try:
-            result = analyzer.analyze(
-                input_path=str(input_dir),
-                output_path=str(output_path)
-            )
-            
-            logger.info(f"Codon analysis completed: {result}")
-            return jsonify({'status': 'success', 'result': result})
-        finally:
-            analyzer.stop()
+        spark = get_spark_session()
+        analyzer = CodonAnalyzer(spark=spark, frame=frame)
+        
+        result_df = analyzer.analyze(
+            input_path=input_path,
+            output_path=output_path,
+            skip_n=skip_n,
+            min_count=min_count
+        )
+        
+        # Get stats
+        total_codons = result_df.count()
+        
+        logger.info(f"Codon analysis completed: {total_codons} codons")
+        return jsonify({
+            'status': 'success', 
+            'result': {
+                'total_codons': total_codons,
+                'output_path': output_path
+            }
+        })
         
     except Exception as e:
         logger.error(f"Codon analysis failed: {str(e)}", exc_info=True)
@@ -220,22 +246,30 @@ def api_analyze_codon():
 
 @app.route('/api/datasets', methods=['GET'])
 def api_datasets():
-    """List available datasets"""
+    """List available datasets in the parquet directory"""
     try:
         datasets = []
-        if DATA_DIR.exists():
-            for item in DATA_DIR.iterdir():
-                if item.is_dir() and item.name != 'uploads':
-                    # Count parquet files
-                    parquet_files = list(item.glob('*.parquet'))
+        parquet_dir = DATA_DIR / 'parquet'
+        
+        if parquet_dir.exists():
+            for item in parquet_dir.iterdir():
+                if item.is_dir():
+                    # Count parquet files (including in subdirectories)
+                    parquet_files = list(item.glob('**/*.parquet'))
                     if parquet_files:
+                        # Calculate total size
+                        total_size = sum(f.stat().st_size for f in parquet_files)
+                        size_mb = total_size / (1024 * 1024)
+                        
                         datasets.append({
                             'name': item.name,
-                            'path': str(item.relative_to(DATA_DIR)),
+                            'path': f'/data/parquet/{item.name}',
+                            'shards': len(parquet_files),
+                            'size_mb': size_mb,
                             'file_count': len(parquet_files)
                         })
         
-        return jsonify({'datasets': datasets})
+        return jsonify({'status': 'success', 'datasets': datasets})
         
     except Exception as e:
         logger.error(f"Failed to list datasets: {str(e)}", exc_info=True)
@@ -301,24 +335,119 @@ def api_analyze_search():
 
 @app.route('/api/results', methods=['GET'])
 def api_results():
-    """List available analysis results"""
+    """List available analysis results (grouped by result directory)"""
     try:
         results = []
         if RESULTS_DIR.exists():
-            for analysis_type in RESULTS_DIR.iterdir():
-                if analysis_type.is_dir():
-                    for result_file in analysis_type.glob('*.parquet'):
+            for item in RESULTS_DIR.iterdir():
+                if item.is_dir():
+                    # Count parquet files and calculate total size
+                    parquet_files = list(item.glob('**/*.parquet'))
+                    if parquet_files:
+                        total_size = sum(f.stat().st_size for f in parquet_files)
+                        # Get most recent modification time
+                        latest_mtime = max(f.stat().st_mtime for f in parquet_files)
+                        
                         results.append({
-                            'type': analysis_type.name,
-                            'name': result_file.name,
-                            'path': str(result_file.relative_to(RESULTS_DIR)),
-                            'size': result_file.stat().st_size
+                            'name': item.name,
+                            'path': f'/results/{item.name}',
+                            'size_mb': total_size / (1024 * 1024),
+                            'file_count': len(parquet_files),
+                            'modified': latest_mtime * 1000  # JavaScript expects milliseconds
                         })
         
-        return jsonify({'results': results})
+        # Sort by modification time, most recent first
+        results.sort(key=lambda x: x['modified'], reverse=True)
+        
+        return jsonify({'status': 'success', 'results': results})
         
     except Exception as e:
         logger.error(f"Failed to list results: {str(e)}", exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/results/<name>/preview', methods=['GET'])
+def api_results_preview(name):
+    """Preview the first N rows of a result dataset"""
+    try:
+        import pandas as pd
+        
+        result_path = RESULTS_DIR / name
+        if not result_path.exists():
+            return jsonify({'status': 'error', 'message': f'Result {name} not found'}), 404
+        
+        # Find parquet files
+        parquet_files = list(result_path.glob('**/*.parquet'))
+        if not parquet_files:
+            return jsonify({'status': 'error', 'message': 'No parquet files found'}), 404
+        
+        # Read first parquet file for preview
+        df = pd.read_parquet(parquet_files[0])
+        
+        # Get total rows across all files (approximate)
+        total_rows = len(df)
+        if len(parquet_files) > 1:
+            total_rows = total_rows * len(parquet_files)  # Approximate
+        
+        # Get first 50 rows for preview
+        preview_df = df.head(50)
+        
+        return jsonify({
+            'status': 'success',
+            'name': name,
+            'columns': list(preview_df.columns),
+            'preview': preview_df.to_dict(orient='records'),
+            'total_rows': total_rows,
+            'file_count': len(parquet_files)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to preview result {name}: {str(e)}", exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/results/<name>/download', methods=['GET'])
+def api_results_download(name):
+    """Download result as CSV"""
+    try:
+        import pandas as pd
+        import io
+        
+        result_path = RESULTS_DIR / name
+        if not result_path.exists():
+            return jsonify({'status': 'error', 'message': f'Result {name} not found'}), 404
+        
+        # Find parquet files
+        parquet_files = list(result_path.glob('**/*.parquet'))
+        if not parquet_files:
+            return jsonify({'status': 'error', 'message': 'No parquet files found'}), 404
+        
+        # Read all parquet files and combine
+        dfs = []
+        for pf in parquet_files[:10]:  # Limit to first 10 files to avoid memory issues
+            dfs.append(pd.read_parquet(pf))
+        
+        df = pd.concat(dfs, ignore_index=True)
+        
+        # Limit to 100k rows for download
+        if len(df) > 100000:
+            df = df.head(100000)
+            logger.warning(f"Download for {name} truncated to 100k rows")
+        
+        # Convert to CSV
+        csv_buffer = io.StringIO()
+        df.to_csv(csv_buffer, index=False)
+        csv_data = csv_buffer.getvalue()
+        
+        from flask import Response
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': f'attachment; filename={name}.csv'}
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to download result {name}: {str(e)}", exc_info=True)
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 

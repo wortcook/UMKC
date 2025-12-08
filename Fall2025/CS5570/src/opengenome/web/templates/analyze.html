@@ -65,17 +65,19 @@
             </label>
         </div>
         
-        <button type="submit">Run K-mer Analysis</button>
+        <button type="submit" id="kmer-submit">Run K-mer Analysis</button>
     </form>
     
     <div id="kmer-loading" class="loading">
         <div class="spinner"></div>
-        <p>Running k-mer analysis...</p>
+        <p id="kmer-status">Initializing Spark connection...</p>
+        <p class="help-text">Large datasets may take several minutes. Watch progress at <a href="http://localhost:8081" target="_blank">Spark UI</a></p>
     </div>
     
     <div id="kmer-result" style="display: none; margin-top: 20px;">
         <div class="alert alert-success">Analysis completed!</div>
-        <p>Output: <code id="kmer-output-path">-</code></p>
+        <p><strong>Unique K-mers:</strong> <span id="kmer-unique-count">-</span></p>
+        <p><strong>Output:</strong> <code id="kmer-output-path">-</code></p>
     </div>
 </div>
 
@@ -99,6 +101,13 @@
                 <option value="1">Frame 1</option>
                 <option value="2">Frame 2</option>
             </select>
+            <div class="help-text">
+                <strong>Reading frame</strong> determines where codon extraction starts in the sequence.<br>
+                • <strong>Frame 0:</strong> Start at position 1 (ATG-CTA-GCC...)<br>
+                • <strong>Frame 1:</strong> Start at position 2 (TGC-TAG-CC...)<br>
+                • <strong>Frame 2:</strong> Start at position 3 (GCT-AGC-C...)<br>
+                Use Frame 0 for most analyses. Different frames may reveal different coding regions.
+            </div>
         </div>
         
         <div class="form-group">
@@ -132,17 +141,19 @@
             </label>
         </div>
         
-        <button type="submit">Run Codon Analysis</button>
+        <button type="submit" id="codon-submit">Run Codon Analysis</button>
     </form>
     
     <div id="codon-loading" class="loading">
         <div class="spinner"></div>
-        <p>Running codon usage analysis...</p>
+        <p id="codon-status">Initializing Spark connection...</p>
+        <p class="help-text">Large datasets may take several minutes. Watch progress at <a href="http://localhost:8081" target="_blank">Spark UI</a></p>
     </div>
     
     <div id="codon-result" style="display: none; margin-top: 20px;">
         <div class="alert alert-success">Analysis completed!</div>
-        <p>Output: <code id="codon-output-path">-</code></p>
+        <p><strong>Total Codons:</strong> <span id="codon-total-count">-</span></p>
+        <p><strong>Output:</strong> <code id="codon-output-path">-</code></p>
     </div>
 </div>
 
@@ -199,10 +210,30 @@
         
         const loadingEl = document.getElementById('kmer-loading');
         const resultEl = document.getElementById('kmer-result');
+        const statusEl = document.getElementById('kmer-status');
+        const submitBtn = document.getElementById('kmer-submit');
         
         loadingEl.classList.add('active');
         resultEl.style.display = 'none';
-        e.target.querySelector('button').disabled = true;
+        submitBtn.disabled = true;
+        
+        // Show progress updates
+        statusEl.textContent = 'Connecting to Spark cluster...';
+        const startTime = Date.now();
+        
+        // Update status periodically
+        const statusInterval = setInterval(() => {
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            if (elapsed < 5) {
+                statusEl.textContent = 'Initializing Spark session...';
+            } else if (elapsed < 15) {
+                statusEl.textContent = `Loading sequences... (${elapsed}s)`;
+            } else if (elapsed < 60) {
+                statusEl.textContent = `Extracting k-mers... (${elapsed}s)`;
+            } else {
+                statusEl.textContent = `Processing large dataset... (${elapsed}s)`;
+            }
+        }, 1000);
         
         try {
             const response = await fetch('/api/analyze/kmer', {
@@ -211,20 +242,25 @@
                 body: JSON.stringify(data)
             });
             
+            clearInterval(statusInterval);
             const responseData = await response.json();
             
             if (responseData.status === 'success') {
-                document.getElementById('kmer-output-path').textContent = data.output;
+                const result = responseData.result;
+                document.getElementById('kmer-output-path').textContent = result.output_path || data.output;
+                document.getElementById('kmer-unique-count').textContent = result.unique_kmers ? result.unique_kmers.toLocaleString() : '-';
                 resultEl.style.display = 'block';
-                showAlert('K-mer analysis completed!', 'success');
+                const elapsed = Math.round((Date.now() - startTime) / 1000);
+                showAlert(`K-mer analysis completed in ${elapsed}s! Found ${result.unique_kmers?.toLocaleString() || 'N/A'} unique k-mers.`, 'success');
             } else {
                 showAlert('Error: ' + responseData.message, 'error');
             }
         } catch (error) {
+            clearInterval(statusInterval);
             showAlert('Request failed: ' + error.message, 'error');
         } finally {
             loadingEl.classList.remove('active');
-            e.target.querySelector('button').disabled = false;
+            submitBtn.disabled = false;
         }
     });
     
@@ -243,10 +279,30 @@
         
         const loadingEl = document.getElementById('codon-loading');
         const resultEl = document.getElementById('codon-result');
+        const statusEl = document.getElementById('codon-status');
+        const submitBtn = document.getElementById('codon-submit');
         
         loadingEl.classList.add('active');
         resultEl.style.display = 'none';
-        e.target.querySelector('button').disabled = true;
+        submitBtn.disabled = true;
+        
+        // Show progress updates
+        statusEl.textContent = 'Connecting to Spark cluster...';
+        const startTime = Date.now();
+        
+        // Update status periodically
+        const statusInterval = setInterval(() => {
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            if (elapsed < 5) {
+                statusEl.textContent = 'Initializing Spark session...';
+            } else if (elapsed < 15) {
+                statusEl.textContent = `Loading sequences... (${elapsed}s)`;
+            } else if (elapsed < 60) {
+                statusEl.textContent = `Analyzing codons... (${elapsed}s)`;
+            } else {
+                statusEl.textContent = `Processing large dataset... (${elapsed}s)`;
+            }
+        }, 1000);
         
         try {
             const response = await fetch('/api/analyze/codon', {
@@ -255,20 +311,25 @@
                 body: JSON.stringify(data)
             });
             
+            clearInterval(statusInterval);
             const responseData = await response.json();
             
             if (responseData.status === 'success') {
-                document.getElementById('codon-output-path').textContent = data.output;
+                const result = responseData.result;
+                document.getElementById('codon-output-path').textContent = result.output_path || data.output;
+                document.getElementById('codon-total-count').textContent = result.total_codons ? result.total_codons.toLocaleString() : '-';
                 resultEl.style.display = 'block';
-                showAlert('Codon analysis completed!', 'success');
+                const elapsed = Math.round((Date.now() - startTime) / 1000);
+                showAlert(`Codon analysis completed in ${elapsed}s!`, 'success');
             } else {
                 showAlert('Error: ' + responseData.message, 'error');
             }
         } catch (error) {
+            clearInterval(statusInterval);
             showAlert('Request failed: ' + error.message, 'error');
         } finally {
             loadingEl.classList.remove('active');
-            e.target.querySelector('button').disabled = false;
+            submitBtn.disabled = false;
         }
     });
     

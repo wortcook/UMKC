@@ -41,9 +41,19 @@ def get_spark_session(
     """
     global _spark_session
     
+    # Check if existing session is still alive
     if _spark_session is not None:
-        logger.debug(f"Reusing existing Spark session: {_spark_session.sparkContext.appName}")
-        return _spark_session
+        try:
+            # Try to access the SparkContext to verify it's alive
+            if not _spark_session.sparkContext._jsc.sc().isStopped():
+                logger.debug(f"Reusing existing Spark session: {_spark_session.sparkContext.appName}")
+                return _spark_session
+            else:
+                logger.info("Existing Spark session is stopped, creating new one")
+                _spark_session = None
+        except Exception as e:
+            logger.warning(f"Existing Spark session is invalid ({e}), creating new one")
+            _spark_session = None
     
     # Determine master URL
     if master is None:
